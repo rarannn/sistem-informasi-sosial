@@ -119,9 +119,9 @@ if (isset($_GET['hal'])) {
         </div>
       </div>
       <div class="menu">
-        <li class="item"><a class="label-2" href="home.php">Home</a></li>
+        <li class="item"><a class="label" href="home.php">Home</a></li>
         <li class="item layanan">
-          <a class="label" href="#">Layanan</a>
+          <a class="label-2" href="#">Layanan</a>
           <ul class="dropdown-menu">
             <li>
               <a class="label" href="aturan_layanan.php">

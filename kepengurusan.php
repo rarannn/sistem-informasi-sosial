@@ -93,7 +93,7 @@ if (isset($_GET['hal']) && $_SESSION['level'] == 'petugas') {
         </div>
       </div>
       <div class="menu">
-        <li class="item"><a class="label-2" href="home.php">Home</a></li>
+        <li class="item"><a class="label" href="home.php">Home</a></li>
         <li class="item layanan">
           <a class="label" href="#">Layanan</a>
           <ul class="dropdown-menu">
@@ -111,7 +111,7 @@ if (isset($_GET['hal']) && $_SESSION['level'] == 'petugas') {
         </li>
 
         <li class="item"><a href="<?php echo ($_SESSION['level'] == 'petugas') ? 'artikel-admin.php' : 'artikel-user.php'; ?>" class="label">Informasi</a></li>
-        <li class="item"><a class="label" href="kepengurusan.php">Kepengurusan</a></li>
+        <li class="item"><a class="label-2" href="kepengurusan.php">Kepengurusan</a></li>
         <li class="item"><a class="label" href="home.php#tentang">Tentang</a></li>
         <li class="item"><a class="label" href="fitur_feedback.php">Feedback</a></li>
       </div>
