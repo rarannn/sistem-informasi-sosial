@@ -126,8 +126,8 @@ if (isset($_GET['hal'])) {
                 <li class="item">
                     <a href="<?php echo ($_SESSION['level'] == 'petugas') ? '../artikel-admin.php' : '../artikel-user.php'; ?>" class="label">Informasi</a>
                 </li>
-                <li class="item"><a class="label" href="../petugas/kepengurusan/kepengurusan.php">Kepengurusan</a></li>
-                <li class="item"><a class="label" href="#tentang">Tentang</a></li>
+                <li class="item"><a class="label" href="../kepengurusan.php">Kepengurusan</a></li>
+                <li class="item"><a class="label" href="../home.php#tentang">Tentang</a></li>
                 <li class="item"><a class="label" href="../fitur_feedback.php">Feedback</a></li>
             </div>
             <div class="frame">
@@ -180,7 +180,7 @@ if (isset($_GET['hal'])) {
                         <div class="frame-4">
                             <div class="text-wrapper-3">Jenis Pelayanan</div>
                             <div class="field-form-dropdown">
-                                <select class="form-dropdown" id="jenis" name="jenis" required>
+                                <select class="form-dropdown" value="<?= $vjenis ?>" id="jenis" name="jenis" required>
                                     <option value="" disabled selected>Jenis Layanan</option>
                                     <option value="Pengaduan"> Pengaduan</option>
                                     <option value="Administrasi"> Administrasi</option>
@@ -191,13 +191,13 @@ if (isset($_GET['hal'])) {
                         <div class="frame-4">
                             <div class="text-wrapper-3">Permintaan tambahan spesifikasi layanan</div>
                             <div class="field-form-isi">
-                                <input type="text" class="form-input" name="request" placeholder="Masukkan spesifikasi layanan">
+                                <input type="text" class="form-input" value="<?= $vrequest ?>" name="request" placeholder="Masukkan spesifikasi layanan">
                             </div>
                         </div>
                         <div class="frame-4">
                             <div class="text-wrapper-3">Alasan</div>
                             <div class="field-form-isi">
-                                <textarea type="text" value="<?= $valasan ?>" class="form-input" name="alasan" style="resize: vertical; width: 100%; max-width: 100%; min-width: 100%; min-height: 180px;" placeholder="Masukkan alasan maksimal 100 kata"><?= $alasan ?></textarea>
+                                <textarea type="text" value="<?= $valasan ?>" class="form-input" name="alasan" style="resize: vertical; width: 100%; max-width: 100%; min-width: 100%; min-height: 180px;" placeholder="Masukkan alasan maksimal 100 kata"><?= $valasan ?></textarea>
                             </div>
                         </div>
                         <div class="frame-6">
@@ -283,7 +283,7 @@ if (isset($_GET['hal'])) {
                                             <img class="img" src="../img/edit.png" /></a>
                                     <?php } ?>
                                     <!-- Display delete button for all -->
-                                    <a href="tambahan.php?hal=hapus&id=<?= $tampil['id'] ?>">
+                                    <a href="tambahan.php?hal=hapus&id=<?= $tampil['id'] ?>" onclick="return confirm('Apakah yakin ingin menghapus data ini?')">
                                         <img class="img" src="../img/trash.png" /></a>
                                 </td>
                             <?php } ?>
