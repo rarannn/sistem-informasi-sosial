@@ -27,8 +27,6 @@ if (isset($_POST['simpan'])) {
         if (in_array($ekstensi, $ekstensi_boleh) === true) {
             if ($_GET['hal'] == "edit") {
                 $query = "UPDATE pengaduan SET
-            --  username = '$_POST[username]',
-            --  nama = '$_POST[nama]',
              jenis = '$_POST[jenis]',
              deskripsi = '$_POST[deskripsi]',
              `data` = '$file_name',
@@ -38,17 +36,11 @@ if (isset($_POST['simpan'])) {
 
                 if ($edit) {
                     move_uploaded_file($_FILES['data']['tmp_name'], $direktori . $file_name);
-                    // $sukses = "Berhasil Menyimpan Data";
                     echo "<script>alert('Berhasil Memperbarui Pengaduan!');</script>";
-                    // exit();
                     header("refresh:2;url=pengaduan.php");
-                    // header("Location: pengaduan.php", true, 301);
-                    // echo "<script>location.replace('pengaduan.php');</script>";
                 } else {
                     echo "<script>alert('Edit Data Gagal!');</script>";
-                    // $error = "Gagal Menyimpan Data";
                     header("refresh:2;url=pengaduan.php");
-                    // echo "<script>location.replace('pengaduan.php');</script>";
                 }
             } else {
 
@@ -57,13 +49,11 @@ if (isset($_POST['simpan'])) {
                 $a = $koneksi->query($sql);
                 if ($a === true) {
                     move_uploaded_file($_FILES['data']['tmp_name'], $direktori . $file_name);
-                    // $sukses = "Berhasil Menyimpan Data";
                     echo "<script>alert('Berhasil Mengirim Pengaduan!');</script>";
                     header("refresh:2;url=pengaduan.php");
                 } else {
                     echo "<script>alert('Gagal Mengirim Pengaduan!');</script>";
                     echo "<script>history.back();</script>";
-                    // header("refresh:2;url=pengaduan.php");
                 }
             }
         } else {
@@ -75,7 +65,6 @@ if (isset($_POST['simpan'])) {
         echo "<script>location.replace('pengaduan.php?status=gagal');</script>";
     }
 } else {
-    //  echo "<script>alert('Gagal Mengirim Pengaduan!');</script>";
     echo "<script>location('pengaduan.php');</script>";
 }
 
@@ -90,12 +79,24 @@ if (isset($_GET['hal'])) {
             $vdata = $data['data'];
         }
     } elseif ($_GET['hal'] == "hapus") {
-        $hapus = mysqli_query($koneksi, "DELETE FROM pengaduan WHERE id='$_GET[id]'");
-        if ($hapus) {
+    // Hapus entri terkait di tabel hasil_pengaduan terlebih dahulu
+    $hapus_hasil_pengaduan = mysqli_query($koneksi, "DELETE FROM hasil_pengaduan WHERE pengaduanId='$_GET[id]'");
+
+    // Periksa apakah penghapusan berhasil
+    if ($hapus_hasil_pengaduan) {
+        // Lanjutkan menghapus entri di tabel pengaduan
+        $hapus_pengaduan = mysqli_query($koneksi, "DELETE FROM pengaduan WHERE id='$_GET[id]'");
+        
+        if ($hapus_pengaduan) {
             echo "<script>alert('Hapus Data Sukses!');</script>";
             header("refresh:2;url=pengaduan.php");
+        } else {
+            echo "<script>alert('Gagal menghapus data pengaduan!');</script>";
         }
+    } else {
+        echo "<script>alert('Gagal menghapus data hasil pengaduan!');</script>";
     }
+}
 }
 ?>
 
@@ -145,8 +146,8 @@ if (isset($_GET['hal'])) {
                 </li>
 
                 <li class="item"><a href="<?php echo ($_SESSION['level'] == 'petugas') ? '../artikel-admin.php' : '../artikel-user.php'; ?>" class="label">Informasi</a></li>
-                <li class="item"><a class="label" href="../petugas/kepengurusan/kepengurusan.php">Kepengurusan</a></li>
-                <li class="item"><a class="label" href="#tentang">Tentang</a></li>
+                <li class="item"><a class="label" href="../kepengurusan.php">Kepengurusan</a></li>
+                <li class="item"><a class="label" href="../home.php#tentang">Tentang</a></li>
                 <li class="item"><a class="label" href="../fitur_feedback.php">Feedback</a></li>
             </div>
             <div class="frame">
@@ -204,7 +205,7 @@ if (isset($_GET['hal'])) {
                         <div class="frame-4">
                             <div class="text-wrapper-3">Jenis pengaduan</div>
                             <div class="field-form-dropdown">
-                                <select class="form-dropdown" id="jenis" name="jenis" required>
+                                <select class="form-dropdown" value="<?= $vjenis ?>" id="jenis" name="jenis" required>
                                     <option value="" disabled selected>Jenis Pengaduan</option>
                                     <?php
                                     include "../koneksi.php";
@@ -301,7 +302,7 @@ if (isset($_GET['hal'])) {
                     while ($tampil = mysqli_fetch_array($a)) : ?>
                         <tr class="frame-11-content-row">
                             <?php
-                            $isOwner = $tampil['userId'] == $username = $_SESSION['username']; // Check if the current user is the owner of this data
+                            $isOwner = $tampil['userId'] == $username = $_SESSION['username'];
                             ?>
                             <td class="frame-16">
                                 <div class="text-wrapper-6"><?= $no++ ?></div>

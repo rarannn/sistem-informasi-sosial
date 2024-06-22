@@ -37,17 +37,11 @@ if (isset($_POST['simpan'])) {
 
                 if ($edit) {
                     move_uploaded_file($_FILES['data']['tmp_name'], $direktori . $file_name);
-                    // $sukses = "Berhasil Menyimpan Data";
                     echo "<script>alert('Berhasil Memperbarui administrasi!');</script>";
-                    // exit();
                     header("refresh:2;url=administrasi.php");
-                    // header("Location: administrasi.php", true, 301);
-                    // echo "<script>location.replace('administrasi.php');</script>";
                 } else {
                     echo "<script>alert('Edit Data Gagal!');</script>";
-                    // $error = "Gagal Menyimpan Data";
                     header("refresh:2;url=administrasi.php");
-                    // echo "<script>location.replace('administrasi.php');</script>";
                 }
             } else {
 
@@ -56,12 +50,10 @@ if (isset($_POST['simpan'])) {
                 $a = $koneksi->query($sql);
                 if ($a === true) {
                     move_uploaded_file($_FILES['data']['tmp_name'], $direktori . $file_name);
-                    // $sukses = "Berhasil Menyimpan Data";
                     echo "<script>alert('Berhasil Mengirim administrasi!');</script>";
                     echo "<script>location('administrasi.php?status=sukses');</script>";
                 } else {
                     echo "<script>alert('Gagal Mengirim administrasi!');</script>";
-                    // $error
                     echo "<script>location('administrasi.php?status=gagal');</script>";
                 }
             }
@@ -74,11 +66,10 @@ if (isset($_POST['simpan'])) {
         echo "<script>history.back();</script>";
     }
 } else {
-    //  echo "<script>alert('Gagal Mengirim administrasi!');</script>";
     echo "<script>location('administrasi.php');</script>";
 }
 
-// tombol edit tabel
+// tombol hapus tabel
 if (isset($_GET['hal'])) {
     if ($_GET['hal'] == "edit") {
         $b = mysqli_query($koneksi, "SELECT * FROM administrasi where id='$_GET[id]'");
@@ -87,7 +78,6 @@ if (isset($_GET['hal'])) {
             $vjenis = $data['jenis'];
             $vdesk = $data['deskripsi'];
             $vdata = $data['data'];
-            // $vdata = $data['data']['name'];
 
         }
     } elseif ($_GET['hal'] == "hapus") {
@@ -110,8 +100,6 @@ if (isset($_GET['hal'])) {
     <link rel="stylesheet" href="../globals.css" />
     <link rel="stylesheet" href="../styleguide.css" />
     <link rel="stylesheet" href="../style-layanan-administrasi.css" />
-    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css"> -->
-    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous"> -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
 
 </head>
@@ -151,8 +139,8 @@ if (isset($_GET['hal'])) {
                 <li class="item">
                     <a href="<?php echo ($_SESSION['level'] == 'petugas') ? '../artikel-admin.php' : '../artikel-user.php'; ?>" class="label">Informasi</a>
                 </li>
-                <li class="item"><a class="label" href="../petugas/kepengurusan/kepengurusan.php">Kepengurusan</a></li>
-                <li class="item"><a class="label" href="#tentang">Tentang</a></li>
+                <li class="item"><a class="label" href="../kepengurusan.php">Kepengurusan</a></li>
+                <li class="item"><a class="label" href="../home.php#tentang">Tentang</a></li>
                 <li class="item"><a class="label" href="../fitur_feedback.php">Feedback</a></li>
             </div>
             <div class="frame">
@@ -207,7 +195,7 @@ if (isset($_GET['hal'])) {
                         <div class="frame-4">
                             <div class="text-wrapper-3">Jenis administrasi</div>
                             <div class="field-form-dropdown">
-                                <select class="form-dropdown" id="jenis" name="jenis" required>
+                                <select class="form-dropdown" id="jenis" value="<?= $vjenis ?>" name="jenis" required>
                                     <option value="" disabled selected>Jenis Administrasi</option>
                                     <?php
                                     include "../koneksi.php";
@@ -293,7 +281,6 @@ if (isset($_GET['hal'])) {
                         </td>
                     </tr>
                     <?php
-                    // $tampil_sebagian = substr($kalimat, 0, 50);
                     $no = 1;
                     if ($_SESSION['level'] == "petugas") {
                         $a = mysqli_query($koneksi, "SELECT * FROM administrasi");
@@ -333,7 +320,7 @@ if (isset($_GET['hal'])) {
                                             <img class="img" src="../img/edit.png" /></a>
                                     <?php } ?>
                                     <!-- Display delete button for all -->
-                                    <a href="administrasi.php?hal=hapus&id=<?= $tampil['id'] ?>">
+                                    <a href="administrasi.php?hal=hapus&id=<?= $tampil['id'] ?>" onclick="return confirm('Apakah yakin ingin menghapus data ini?')">
                                         <img class="img" src="../img/trash.png" /></a>
                                 </td>
                             <?php } ?>

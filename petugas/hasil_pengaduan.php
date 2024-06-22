@@ -8,56 +8,82 @@ if (!isset($_SESSION['username'])) {
     $username = $_SESSION['username'];
 }
 
-// $kode = $_GET['id'];
-// $petugas = $_SESSION['nama'];
 $pengId = $_POST['pengId'];
 $tanggapan = $_POST['tanggapan'];
 $nama = $_POST['nama'];
-// $kategori = $kategori ['kategori'];
 $petugas = $_SESSION['nama'];
 $file_name = $_FILES['file']['name'];
 $file_tmp = $_FILES['file']['tmp_name'];
-$direktori = "C:/xampp/htdocs/project/Sosial/upload-file/pengaduan/";
+$direktori_pengaduan = "C:/xampp/htdocs/project/Sosial/upload-file/pengaduan/";
+$direktori_administrasi = "C:/xampp/htdocs/project/Sosial/upload-file/administrasi/";
+$jenis_layanan = $_POST['jenis'];
+
+if ($jenis_layanan == 'Pengaduan') {
+    $direktori = $direktori_pengaduan;
+} else {
+    $direktori = $direktori_administrasi;
+}
 $linkberkas = $direktori . $file_name;
 
-
 if (isset($_POST['simpan'])) {
-    if (empty($pengId && $nama && $tanggapan && $file_name) != true) {
-
-        $sql = "INSERT INTO hasil_pengaduan (pengaduanId, nama, deskripsi, file,tanggal, petugas)
-             values ('" . $pengId . "','" . $nama . "','" . $tanggapan . "','" . $file_name . "',NOW(),'" . $petugas . "')";
-        $a = $koneksi->query($sql);
-        if ($a === true) {
-            move_uploaded_file($file_tmp, $linkberkas);
-            echo "<script>alert('Berhasil Mengirim Hasil Pengaduan!');</script>";
-            header("refresh:2;url=hasil_pengaduan.php");
-        } else {
-            echo "<script>alert('Gagal Mengirim Aturan!');</script>";
-            header("refresh:2;url=hasil_pengaduan.php");
-        }
-    } else {
-        echo "<script>alert('Ada Input yang Kosong!');</script>";
+    if (empty($pengId) || empty($nama) || empty($tanggapan) || empty($file_name)) {
+        echo "<script>alert('Ulangi ada input yang kosong');</script>";
         echo "<script>history.back();</script>";
+    } else {
+        if ($jenis_layanan == 'Pengaduan') {
+            $sql_check = "SELECT * FROM pengaduan WHERE id='$pengId' AND nama='$nama'";
+        } else {
+            $sql_check = "SELECT * FROM administrasi WHERE id='$pengId' AND nama='$nama'";
+        }
+        $result_check = $koneksi->query($sql_check);
+
+        if ($result_check->num_rows > 0) {
+            if ($jenis_layanan == 'Pengaduan') {
+                $sql = "INSERT INTO hasil_pengaduan (pengaduanId, nama, deskripsi, file, tanggal, petugas) 
+                        VALUES ('$pengId', '$nama', '$tanggapan', '$file_name', NOW(), '$petugas')";
+            } else {
+                $sql = "INSERT INTO hasil_administrasi (administrasiId, nama, deskripsi, file, tanggal, petugas) 
+                        VALUES ('$pengId', '$nama', '$tanggapan', '$file_name', NOW(), '$petugas')";
+            }
+            $a = $koneksi->query($sql);
+            if ($a === true) {
+                move_uploaded_file($file_tmp, $linkberkas);
+                echo "<script>alert('Berhasil Mengirim Hasil $jenis_layanan!');</script>";
+                header("refresh:2;url=hasil_pengaduan.php");
+            } else {
+                echo "<script>alert('Gagal Mengirim Hasil $jenis_layanan!');</script>";
+                header("refresh:2;url=hasil_pengaduan.php");
+            }
+        } else {
+            if ($jenis_layanan == 'Pengaduan') {
+                echo "<script>alert('Kode pengaduan atau nama pengaduan tidak sesuai dengan id pengaduan');</script>";
+            } else {
+                echo "<script>alert('Kode administrasi atau nama administrasi tidak sesuai dengan id administrasi');</script>";
+            }
+            echo "<script>history.back();</script>";
+        }
     }
 } else {
     echo "<script>location('hasil_pengaduan.php');</script>";
 }
 
-// tombol edit tabel
+// tombol hapus
 if (isset($_GET['hal'])) {
-    if ($_GET['hal'] == "hapus") {
-        $hapus = mysqli_query($koneksi, "DELETE FROM hasil_pengaduan WHERE id='$_GET[id]'");
-        if ($hapus) {
-            echo "<script>
-            alert('Hapus Data Sukses!');
-            location='hasil_pengaduan.php';
-            </script>";
-        } else {
-            echo "<script>alert('Gagal menghapus data');</script>";
-        }
+    $hapus = mysqli_query($koneksi, "DELETE FROM hasil_pengaduan WHERE id='$_GET[id]'");
+    $hapus = mysqli_query($koneksi, "DELETE FROM hasil_administrasi WHERE id='$_GET[id]'");
+
+    if ($hapus) {
+        echo "<script>
+        alert('Hapus Data Sukses!');
+        location='hasil_pengaduan.php';
+        </script>";
+    } else {
+        $error = mysqli_error($koneksi);
+        echo "<script>
+        alert('Gagal menghapus data: $error');
+        </script>";
     }
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -104,8 +130,8 @@ if (isset($_GET['hal'])) {
                 <li class="item">
                     <a href="<?php echo ($_SESSION['level'] == 'petugas') ? '../artikel-admin.php' : '../artikel-user.php'; ?>" class="label">Informasi</a>
                 </li>
-                <li class="item"><a class="label" href="../petugas/kepengurusan/kepengurusan.php">Kepengurusan</a></li>
-                <li class="item"><a class="label" href="#tentang">Tentang</a></li>
+                <li class="item"><a class="label" href="../kepengurusan.php">Kepengurusan</a></li>
+                <li class="item"><a class="label" href="../home.php#tentang">Tentang</a></li>
                 <li class="item"><a class="label" href="../fitur_feedback.php">Feedback</a></li>
             </div>
             <div class="frame">
@@ -177,10 +203,10 @@ if (isset($_GET['hal'])) {
                             <div class="frame-4">
                                 <div class="text-wrapper-3">Respon Ajuan</div>
                                 <div class="field-form-dropdown">
-                                    <select class="form-dropdown" id="jenis" name="jenis" required>
+                                    <select class="form-dropdown" value="<?= $jenis_layanan ?>" id="jenis" name="jenis" required>
                                         <option value="" disabled selected>Jenis Layanan</option>
-                                        <option value="Pengaduan"> Pengaduan</option>
-                                        <option value="Administrasi"> Administrasi</option>
+                                        <option value="Pengaduan" name="jenis"> Pengaduan</option>
+                                        <option value="Administrasi" name="jenis"> Administrasi</option>
                                     </select>
                                     <span class="dropdown-icon"></span>
                                 </div>
@@ -313,7 +339,7 @@ if (isset($_GET['hal'])) {
                                 <div class="text-wrapper-6"><?= $no++ ?></div>
                             </td>
                             <td class="frame-17">
-                                <div class="text-wrapper-7"><?= $tampil['pengaduanId'] ?></div>
+                                <div class="text-wrapper-7"> <?= $tampil['administrasiId'] ?> <?= $tampil['pengaduanId'] ?></div>
                             </td>
                             <td class="frame-18">
                                 <div class="text-wrapper-7"><?= $tampil['nama'] ?></div>
@@ -328,14 +354,14 @@ if (isset($_GET['hal'])) {
                                 <div class="text-wrapper-7"><?= $tampil['petugas'] ?></div>
                             </td>
                             <td class="frame-18">
-                                <div class="text-wrapper-10">
+                                <div class="text-wrapper-7">
                                     <a href="downloadfile.php?hasil=<?= $tampil['file']; ?>"><?php echo $tampil['file']; ?></a>
                                 </div>
                             </td>
 
                             <?php if ($_SESSION['level'] == 'petugas') { ?>
                                 <td class="frame-20">
-                                    <a href="hasil_pengaduan.php?hal=hapus&id=<?= $tampil['id'] ?>">
+                                    <a href="hasil_pengaduan.php?hal=hapus&id=<?= $tampil['id'] ?>&jenis=<?= $jenis_layanan ?>" onclick="return confirm('Apakah yakin ingin menghapus data ini?')">
                                         <img class="img" src="../img/trash.png" /></a>
                                 </td>
                             <?php } ?>
