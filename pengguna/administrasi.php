@@ -259,7 +259,7 @@ if (isset($_GET['hal'])) {
                 <table class="frame-10">
                     <tr class="frame-11">
                         <td class="frame-12">
-                            <div class="text-wrapper-6">No</div>
+                            <div class="text-wrapper-7">No</div>
                         </td>
                         <td class="frame-13">
                             <div class="text-wrapper-7">ID</div>
@@ -293,7 +293,7 @@ if (isset($_GET['hal'])) {
                             $isOwner = $tampil['userId'] == $username = $_SESSION['username']; // Check if the current user is the owner of this data
                             ?>
                             <td class="frame-16">
-                                <div class="text-wrapper-6"><?= $no++ ?></div>
+                                <div class="text-wrapper-7"><?= $no++ ?></div>
                             </td>
                             <td class="frame-17">
                                 <div class="text-wrapper-7"><?= $tampil['id'] ?></div>
@@ -310,7 +310,7 @@ if (isset($_GET['hal'])) {
                                 </div>
                             </td>
                             <td class="frame-18">
-                                <div class="text-wrapper-10"><a href="downloadfile.php?adm=<?= $tampil['data']; ?>"><?php echo $tampil['data']; ?></a></div>
+                                <div class="text-wrapper-7"><a href="downloadfile.php?adm=<?= $tampil['data']; ?>"><?php echo $tampil['data']; ?></a></div>
                             </td>
                             <?php if ($_SESSION['level'] == "warga" || $_SESSION['level'] == "petugas") { ?>
                                 <td class="frame-20">

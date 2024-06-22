@@ -663,7 +663,7 @@
 .layanan-administrasi .frame-10 {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    /* align-items: flex-start; */
     gap: 8px;
     position: relative;
     align-self: stretch;
@@ -737,10 +737,10 @@
     position: relative;
     flex: 1;
     margin-top: -1px;
-    font-family: var(--body-medium-font-family);
-    font-weight: var(--body-medium-font-weight);
+    font-family: var(--heading-4-regular-font-family);
+    font-weight: var(--heading-4-medium-font-weight);
+    font-size: var(--heading-4-semibold-font-size);
     color: var(--gray);
-    font-size: var(--body-medium-font-size);
     letter-spacing: var(--body-medium-letter-spacing);
     line-height: var(--body-medium-line-height);
     font-style: var(--body-medium-font-style);
@@ -753,6 +753,19 @@
     gap: 10px;
     padding: 18px 24px;
     position: relative;
+    flex: 1;
+    flex-grow: 1;
+    background-color: var(--stroke);
+}
+
+.layanan-administrasi .frame-0 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 18px 24px;
+    position: relative;
+    width: 10vw;
     flex: 1;
     flex-grow: 1;
     background-color: var(--stroke);
@@ -773,10 +786,10 @@
     position: relative;
     width: 100px;
     margin-top: -1px;
-    font-family: var(--body-medium-font-family);
-    font-weight: var(--body-medium-font-weight);
+    font-family: var(--heading-4-regular-font-family);
+    font-weight: var(--heading-4-medium-font-weight);
+    font-size: var(--heading-4-semibold-font-size);
     color: var(--gray);
-    font-size: var(--body-medium-font-size);
     letter-spacing: var(--body-medium-letter-spacing);
     line-height: var(--body-medium-line-height);
     font-style: var(--body-medium-font-style);

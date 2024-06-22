@@ -680,7 +680,7 @@
 .hasil-pengaduan .frame-10 {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    /* align-items: flex-start; */
     gap: 8px;
     position: relative;
     align-self: stretch;
@@ -729,10 +729,10 @@
     position: relative;
     width: fit-content;
     margin-top: -1px;
-    font-family: var(--body-medium-font-family);
-    font-weight: var(--body-medium-font-weight);
+    font-family: var(--heading-4-regular-font-family);
+    font-weight: var(--heading-4-medium-font-weight);
+    font-size: var(--heading-4-semibold-font-size);
     color: var(--gray);
-    font-size: var(--body-medium-font-size);
     letter-spacing: var(--body-medium-letter-spacing);
     line-height: var(--body-medium-line-height);
     white-space: nowrap;
@@ -754,10 +754,10 @@
     position: relative;
     flex: 1;
     margin-top: -1px;
-    font-family: var(--body-medium-font-family);
-    font-weight: var(--body-medium-font-weight);
+    font-family: var(--heading-4-regular-font-family);
+    font-weight: var(--heading-4-medium-font-weight);
+    font-size: var(--heading-4-semibold-font-size);
     color: var(--gray);
-    font-size: var(--body-medium-font-size);
     letter-spacing: var(--body-medium-letter-spacing);
     line-height: var(--body-medium-line-height);
     font-style: var(--body-medium-font-style);
@@ -790,10 +790,10 @@
     position: relative;
     width: 100px;
     margin-top: -1px;
-    font-family: var(--body-medium-font-family);
-    font-weight: var(--body-medium-font-weight);
+    font-family: var(--heading-4-regular-font-family);
+    font-weight: var(--heading-4-medium-font-weight);
+    font-size: var(--heading-4-semibold-font-size);
     color: var(--gray);
-    font-size: var(--body-medium-font-size);
     letter-spacing: var(--body-medium-letter-spacing);
     line-height: var(--body-medium-line-height);
     font-style: var(--body-medium-font-style);

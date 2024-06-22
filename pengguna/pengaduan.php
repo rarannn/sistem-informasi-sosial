@@ -320,7 +320,7 @@ if (isset($_GET['hal'])) {
                                 <div class="text-wrapper-7"><?= $tampil['deskripsi'] ?></div>
                             </td>
                             <td class="frame-18">
-                                <div class="text-wrapper-10"><a href="downloadfile.php?peng=<?= $tampil['data']; ?>"><?php echo $tampil['data']; ?></a></div>
+                                <div class="text-wrapper-7"><a href="downloadfile.php?peng=<?= $tampil['data']; ?>"><?php echo $tampil['data']; ?></a></div>
                             </td>
                             <?php if ($_SESSION['level'] == "warga" || $_SESSION['level'] == "petugas") { ?>
                                 <td class="frame-20"><?php if ($isOwner) { ?>
