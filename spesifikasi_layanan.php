@@ -9,14 +9,15 @@ if (!isset($_SESSION['username'])) {
 
 $kode = isset($_GET['id']) ? $_GET['id'] : null;
 $nama = isset($_SESSION['nama']) ? $_SESSION['nama'] : null;
-$jenis = isset($_POST['jenis']) ? $_POST['jenis'] : null;
-$layanan = isset($_POST['spesifikasi']) ? $_POST['spesifikasi'] : null;
+$jenis = isset($_POST['jenis']) ? htmlspecialchars($_POST['jenis'], ENT_QUOTES, 'UTF-8') : null;
+$layanan = isset($_POST['spesifikasi']) ? htmlspecialchars($_POST['spesifikasi'], ENT_QUOTES, 'UTF-8') : null;
 
 
 if (isset($_POST['simpan'])) {
   if (!empty($jenis) && !empty($layanan)) {
-    $sql = "INSERT INTO layanan (jenis, spesifikasi) values ('$jenis', '$layanan')";
-    $a = $koneksi->query($sql);
+    $sql = $koneksi->prepare("INSERT INTO layanan (jenis, spesifikasi) values (?,?)");
+    $sql->bind_param('ss',$jenis, $layanan);
+    $a = $sql->execute();
     if ($a === true) {
       echo "<script>alert('Berhasil Mengirim Spesifikasi Layanan!');</script>";
       header("refresh:2;url=spesifikasi_layanan.php");
@@ -39,7 +40,9 @@ if (isset($_POST['simpan'])) {
 // tombol edit tabel
 if (isset($_GET['hal'])) {
   if ($_GET['hal'] == "hapus") {
-    $hapus = mysqli_query($koneksi, "DELETE FROM layanan WHERE id='$_GET[id]'");
+    $sql = $koneksi->prepare("DELETE FROM layanan WHERE id=?");
+    $sql->bind_param('s',$_GET['id']);
+    $hapus = $sql->execute();
     if ($hapus) {
       echo "<script>
           alert('Hapus Data Sukses!');

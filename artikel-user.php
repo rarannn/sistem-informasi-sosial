@@ -95,8 +95,11 @@ if (!isset($_SESSION['username'])) {
             $selected_category = isset($_POST['category']) ? $_POST['category'] : "bansos";
 
             // Query untuk mengambil artikel berdasarkan kategori
-            $query = "SELECT * FROM artikel WHERE kategori = '$selected_category'";
-            $result = $koneksi->query($query);
+            $query = "SELECT * FROM artikel WHERE kategori = ?";
+            $sql = $koneksi->prepare($query);
+            $sql->bind_param("s",$selected_category);
+            $sql->execute();
+            $result = $sql->get_result();
 
             if ($result->num_rows > 0) {
               while ($row = $result->fetch_assoc()) {

@@ -8,48 +8,105 @@ if (!isset($_SESSION['username'])) {
   $username = $_SESSION['username'];
 }
 
+if ($_SESSION['level'] != 'petugas') {
+  echo "<script>
+  alert('Hanya user dengan level petugas bisa mengakses halaman ini!');
+      setTimeout(function() {
+      window.location.href = '/home.php';
+      }, 2000);
+  </script>";
+  die;
+}
+
 $kode = $_GET['id'];
 $nama = $_SESSION['nama'];
-$jenis = $_POST['jenis'];
-$deskripsi = $_POST['deskripsi'];
-$file_name = $_FILES['data']['name'];
+$jenis = htmlspecialchars($_POST['jenis'] ?? '', ENT_QUOTES, "UTF-8");
+$deskripsi = htmlspecialchars($_POST['deskripsi'] ?? '', ENT_QUOTES, "UTF-8");
+$file_name = htmlspecialchars($_FILES['data']['name'] ?? '', ENT_QUOTES, "UTF-8");
 $file_tmp = $_FILES['data']['tmp_name'];
-$direktori = "../template/";
+$direktori = "petugas/template";
 $linkberkas = $direktori . $file_name;
 
 if (isset($_POST['simpan'])) {
   if (empty($jenis && $deskripsi && $file_name) != true) {
     if ($_GET['hal'] == "edit") {
-      $query = "UPDATE aturan_layanan SET
-           id_layanan = '$jenis',
-           aturan = '$deskripsi',
-           template_data = '$file_name',
-           petugas = '$nama'
-           WHERE aturan_layanan.id = '$kode'";
-      $edit = mysqli_query($koneksi, $query) or die("Error in query: $query");
+      
+      $allowed_ext = ['pdf', 'doc', 'docx', 'jpg', 'png'];
+
+      if ($_FILES['data']['size'] >= 50000000) {
+        echo "<script>
+          alert('Ukuran maksimal file yang boleh dikirim adalah 50MB');
+          setTimeout(function() {
+            window.location.href = 'aturan_layanan.php';
+          }, 2000);
+        </script>";
+        exit;
+      }
+      $allowed_extensions = ['pdf', 'doc', 'docx', 'jpg', 'png'];
+
+      $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+      if (!in_array($ext, $allowed_extensions)) {
+        echo "<script>
+          alert('Jenis file tidak diizinkan! Silahkan kirim file dengan ekstensi (pdf, doc, docx, jpg, png)');
+          setTimeout(function() {
+            window.location.href = 'aturan_layanan.php';
+          }, 2000);
+        </script>";
+        exit;
+      }
+
+      $query = "UPDATE aturan_layanan SET id_layanan = ?, aturan = ?, template_data = ?, petugas = ? WHERE aturan_layanan.id = ?";
+      $sql = $koneksi->prepare($query);
+      $sql->bind_param('ssssi', $jenis, $deskripsi, $file_name, $nama, $kode);
+      $edit = $sql->execute();
       $terupload = move_uploaded_file($file_tmp, $linkberkas);
 
       if ($edit && $terupload) {
-        echo "<script>alert('Berhasil Memperbarui Pengaduan!');</script>";
-        // echo "<script>location.replace('aturan_layanan.php');</script>";
-        header("refresh:2;url=aturan_layanan.php");
+          echo "<script>alert('Berhasil Memperbarui Pengaduan!');</script>";
+          header("refresh:2;url=aturan_layanan.php");
       } else {
-        echo "<script>alert('Edit Data Gagal!');</script>";
-        // echo "<script>location.replace('aturan_layanan.php');</script>";
-        header("refresh:2;url=aturan_layanan.php");
+          echo "<script>alert('Edit Data Gagal!');</script>";
+          header("refresh:2;url=aturan_layanan.php");
       }
     } else {
 
-      $sql = "INSERT INTO aturan_layanan (id_layanan, aturan, template_data,petugas)
-           values ('" . $jenis . "','" . $deskripsi . "','" . $file_name . "','" . $nama . "')";
-      $a = $koneksi->query($sql);
+      // secure file handling
+      $allowed_ext = ['pdf', 'doc', 'docx', 'jpg', 'png'];
+
+      if ($_FILES['data']['size'] >= 50000000) {
+        echo "<script>
+          alert('Ukuran maksimal file yang boleh dikirim adalah 50MB');
+          setTimeout(function() {
+            window.location.href = 'aturan_layanan.php';
+          }, 2000);
+        </script>";
+        exit;
+      }
+      $allowed_extensions = ['pdf', 'doc', 'docx', 'jpg', 'png'];
+
+      $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+      if (!in_array($ext, $allowed_extensions)) {
+        echo "<script>
+          alert('Jenis file tidak diizinkan! Silahkan kirim file dengan ekstensi (pdf, doc, docx, jpg, png)');
+          setTimeout(function() {
+            window.location.href = 'aturan_layanan.php';
+          }, 2000);
+        </script>";
+        exit;
+      }
+
+      $query = "INSERT INTO aturan_layanan (id_layanan, aturan, template_data,petugas)
+           values (?, ?, ?, ?)";
+      $sql = $koneksi->prepare($query);
+      $sql->bind_param("ssss", $jenis, $deskripsi, $file_name, $nama);
+      $a = $sql->execute();
       if ($a === true) {
         move_uploaded_file($file_tmp, $linkberkas);
-        echo "<script>alert('Berhasil Mengirim Aturan Layanan!');</script>";
+        echo "<script>alert('Berhasil Mengedit Aturan Layanan!');</script>";
         // echo "<script>location('aturan_layanan.php?status=sukses');</script>";
         header("refresh:2;url=aturan_layanan.php");
       } else {
-        echo "<script>alert('Gagal Mengirim Aturan!');</script>";
+        echo "<script>alert('Gagal Mengedit Aturan!');</script>";
         // echo "<script>location('aturan_layanan.php?status=gagal');</script>";
         header("refresh:2;url=aturan_layanan.php");
       }
@@ -67,16 +124,19 @@ if (isset($_POST['simpan'])) {
 // tombol edit tabel
 if (isset($_GET['hal'])) {
   if ($_GET['hal'] == "edit") {
-    $b = mysqli_query($koneksi, "SELECT * FROM aturan_layanan WHERE id='$_GET[id]'");
-    $data = mysqli_fetch_array($b);
+    $sql = $koneksi->prepare("SELECT * FROM aturan_layanan WHERE id=?");
+    $sql->bind_param("i",$_GET['id']);
+    $sql->execute();
+    $data = $sql->get_result()->fetch_assoc();
     if ($data) {
       $vjenis = $data['id_layanan'];
       $vdesk = $data['aturan'];
       $vdata = $data['template_data'];
     }
   } elseif ($_GET['hal'] == "hapus") {
-    $hapus = mysqli_query($koneksi, "DELETE FROM aturan_layanan WHERE  id='$_GET[id]'");
-    if ($hapus) {
+    $hapus = $koneksi->prepare("DELETE FROM aturan_layanan WHERE id = ?");
+    $hapus->bind_param("i", $_GET['id']);
+    if ($hapus->execute()) {
       echo "<script>
               alert('Hapus Data Sukses!');
               location='aturan_layanan.php';
@@ -164,12 +224,24 @@ if (isset($_GET['hal'])) {
         <p class="description">Panduan yang mengatur prosedur pengaduan dan layanan administrasi yang memastikan keteraturan dan pemahaman yang jelas.</p>
       </div>
       <?php
-      $a = mysqli_query($koneksi, "select * from user where username='$_SESSION[username]'");
-      $tampil = mysqli_fetch_array($a); ?>
+      $username = $_SESSION['username'];
+
+      $sql = "SELECT * FROM user WHERE username = ?";
+      $stmt = $koneksi->prepare($sql);
+      $stmt->bind_param("s", $username);
+      $stmt->execute();
+      $result = $stmt->get_result();
+      $tampil = $result->fetch_assoc(); ?>
 
 
       <?php if ($_SESSION['level'] == 'petugas') { ?>
-        <form class="form-isi" id="aturanForm" method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" enctype="multipart/form-data">
+        <?php
+          $action = htmlspecialchars($_SERVER["PHP_SELF"]);
+          if (isset($_GET['hal']) && isset($_GET['id'])) {
+            $action .= '?hal=edit&id=' . urlencode($_GET['id']);
+          }
+        ?>
+          <form class="form-isi" id="aturanForm" method="post" action="<?php echo $action; ?>" enctype="multipart/form-data">
           <div class="frame-3">
 
             <div class="div-2">

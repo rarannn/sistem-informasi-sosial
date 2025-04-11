@@ -1,41 +1,54 @@
-<?Php
+<?php
 session_start();
 include "../koneksi.php";
 
+// Menggunakan list direktori yang diizinkan dengan path relatif
+$allowedDirs = [
+    'peng' => __DIR__ . '/../upload-file/pengaduan/',
+    'adm'  => __DIR__ . '/../upload-file/administrasi/'
+];
+
+$param = null;
+$folder = null;
+
 if (!empty($_GET['peng'])) {
-    $fileName = basename($_GET['peng']);
-    $filePath = "C:/xampp/htdocs/project/Sosial/upload-file/pengaduan/".$fileName;
+    $param = $_GET['peng'];
+    $folder = $allowedDirs['peng'];
+} elseif (!empty($_GET['adm'])) {
+    $param = $_GET['adm'];
+    $folder = $allowedDirs['adm'];
+}
 
-    if (!empty($fileName) && file_exists($filePath)) {
+if ($param && $folder) {
+    // Hanya mengizinkan berberapa tipe ekstensi file
+    $allowedExtensions = ['zip', 'pdf', 'docx', 'jpg', 'png'];
+    $fileName = basename($param); // strips directory info
+    $filePath = $folder . $fileName;
+
+    // Validasi ekstensi
+    $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+    if (!in_array($fileExt, $allowedExtensions)) {
+        die("Tipe file tidak diizinkan.");
+    }
+
+    // Check apabila file ada
+    if (file_exists($filePath)) {
+        // Memasang content type yang sesuai
+        $mimeType = mime_content_type($filePath);
+
         header("Cache-Control: public");
         header("Content-Description: File Transfer");
-        header("Content-Disposition: Attachment; fileName=$fileName");
-        header("Content-Type: Application/zip");
+        header("Content-Disposition: attachment; filename=\"" . htmlspecialchars($fileName, ENT_QUOTES, 'UTF-8') . "\"");
+        header("Content-Type: " . $mimeType);
         header("Content-Transfer-Encoding: binary");
 
-        //read file
         readfile($filePath);
         exit;
-    }else {
-        echo "file not exist";
+    } else {
+        echo "File tidak ditemukan.";
     }
-}elseif (!empty($_GET['adm'])) {
-    $fileName = basename($_GET['adm']);
-    $filePath = "C:/xampp/htdocs/project/Sosial/upload-file/administrasi/" . $fileName;
-
-    if (!empty($fileName) && file_exists($filePath)) {
-        header("Cache-Control: public");
-        header("Content-Description: File Transfer");
-        header("Content-Disposition: Attachment; fileName=$fileName");
-        header("Content-Type: Application/zip");
-        header("Content-Transfer-Encoding: binary");
-
-        //read file
-        readfile($filePath);
-        exit;
-    }else {
-        echo "file not exist";
-    }
+} else {
+    echo "Request tidak valid!";
 }
 
 // // Tentukan folder file yang boleh di download

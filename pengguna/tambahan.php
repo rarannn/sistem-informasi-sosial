@@ -11,25 +11,20 @@ if (!isset($_SESSION['username'])) {
 
 // Initialize variables
 $kode = $_GET['id'];
-$jenis = $_POST['jenis'];
-$request = $_POST['request'];
-$alasan = $_POST['alasan'];
+$jenis = htmlspecialchars($_POST['jenis'] ?? '', ENT_QUOTES, 'UTF-8');
+$request = htmlspecialchars($_POST['request'] ?? '', ENT_QUOTES, 'UTF-8');
+$alasan = htmlspecialchars($_POST['alasan'] ?? '', ENT_QUOTES, 'UTF-8');
 
 // Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['simpan'])) {
-        $jenis = $_POST['jenis'];
-        $request = $_POST['request'];
-        $alasan = $_POST['alasan'];
 
         if (!empty($jenis) && !empty($request) && !empty($alasan)) {
             if ($_GET['hal'] == "edit") {
-                $query = "UPDATE request SET
-                    jenis = '$jenis',
-                    request = '$request',
-                    alasan = '$alasan'
-                    WHERE request.id = '$kode'";
-                $edit = mysqli_query($koneksi, $query) or die("Error in query: $query");
+                $edit_sql = $koneksi->prepare("UPDATE request SET jenis = ?, request = ?, alasan = ? WHERE id = ?");
+                $edit_sql->bind_param("sssi", $jenis, $request, $alasan, $kode);
+                $edit = $edit_sql->execute();
+                $edit_sql->close();
 
                 if ($edit) {
                     echo "<script>alert('Berhasil Memperbarui Permintaan!');</script>";
@@ -39,9 +34,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     echo "<script>window.location.href='tambahan.php';</script>";
                 }
             } else {
-                $sql = "INSERT INTO request (userId, nama, jenis, request, alasan)
-                    VALUES ('$username', '" . $_SESSION['nama'] . "', '$jenis', '$request', '$alasan')";
-                $result = $koneksi->query($sql);
+                $nama = $_SESSION['nama'];
+                $sql = $koneksi->prepare("INSERT INTO request (userId, nama, jenis, request, alasan) VALUES (?, ?, ?, ?, ?)");
+                $sql->bind_param("sssss", $username, $nama, $jenis, $request, $alasan);
+                $result = $sql->execute();
+                $sql->close();
 
                 if ($result === true) {
                     echo "<script>alert('Berhasil Mengirim Permintaan!');</script>";
@@ -60,20 +57,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 // tombol edit tabel
 if (isset($_GET['hal'])) {
     if ($_GET['hal'] == "edit") {
-        $b = mysqli_query($koneksi, "SELECT * FROM request WHERE id='$_GET[id]'");
-        $data = mysqli_fetch_array($b);
+            $id = $_GET['id'] ?? null;
+            $data = null;
+            
+            if ($id !== null) {
+                $sql = $koneksi->prepare("SELECT * FROM request WHERE id = ?");
+                $sql->bind_param("i", $id);
+                $sql->execute();
+                $result = $sql->get_result();
+                $data = $result->fetch_array(MYSQLI_ASSOC);
+                $sql->close();
+            }
         if ($data) {
             $vjenis = $data['jenis'];
             $vrequest = $data['request'];
             $valasan = $data['alasan'];
         }
     } elseif ($_GET['hal'] == "hapus") {
-        $hapus = mysqli_query($koneksi, "DELETE FROM request WHERE id='$_GET[id]'");
-        if ($hapus) {
-            echo "<script>
-            alert('Hapus Data Sukses!');
-            location='tambahan.php';
-            </script>";
+        $id = $_GET['id'] ?? null;
+
+        if ($id !== null) {
+            $sql = $koneksi->prepare("DELETE FROM request WHERE id = ?");
+            $sql->bind_param("i", $id);
+            $hapus = $sql->execute();
+            $sql->close();
+            if ($hapus) {
+                echo "<script>
+                alert('Hapus Data Sukses!');
+                location='tambahan.php';
+                </script>";
+            }
         }
     }
 }

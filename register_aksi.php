@@ -2,28 +2,37 @@
 session_start();
 include "koneksi.php";
 
-$username = $_POST['username'];
+$username = htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8');
 $password = $_POST['psw'];
-$nama = $_POST['nama'];
-$email = $_POST['email'];
-$alamat = $_POST['alamat'];
+$nama = htmlspecialchars($_POST['nama'] ?? '', ENT_QUOTES, 'UTF-8');
+$email = htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES, 'UTF-8');
+$alamat = htmlspecialchars($_POST['alamat'] ?? '', ENT_QUOTES, 'UTF-8');
 $tlp = $_POST['tlp'];
 $level = $_POST['level'];
 $nip = $_POST['nip'];
 
-if (empty($username && $password && $nama && $email && $alamat && $tlp && $level) != true) {
-    $cek_user = mysqli_query($koneksi, "SELECT * FROM user WHERE username = '$username'");
-    $cek_login = mysqli_num_rows($cek_user);
+if (!empty($username) && !empty($password) && !empty($nama) && !empty($email) && !empty($alamat) && !empty($tlp) && !empty($level)) {
+    if ($level != 'warga' && $level != 'petugas') {
+        die("<script>
+            alert('Invalid level! it's either petugas/warga');
+        </script>");
+    }
+    $sql = $koneksi->prepare("SELECT * FROM user WHERE username = ?");
+    $sql->bind_param('s',$username);
+    $sql->execute();
+    $cek_login = mysqli_num_rows($sql->get_result());
+
     if ($cek_login > 0) {
         echo "<script>
             alert('username milik orang lain. Pakai username lain!');
-            </script>";
+            </script>"; 
         echo "<script>history.back();</script>";
     } else {
-        $newpsw = md5($password);
-        $sql = "INSERT INTO user VALUES ('" . $username . "','" . $newpsw . "','" . $nama . "','" . $email . "','" . $alamat . "','" . $tlp . "','" . $level . "','" . $nip . "')";
-        $a = $koneksi->query($sql);
-        if ($a === true) { ?>
+        $newpsw = password_hash($password, PASSWORD_DEFAULT);
+        $stmt = $koneksi->prepare("INSERT INTO user (username, password, nama, email, alamat, tlp, level, nip) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssssss", $username, $newpsw, $nama, $email, $alamat, $tlp, $level, $nip);
+
+        if ($stmt->execute()) { ?>
             <script>
                 alert('Anda sukses registrasi');
                 location.replace('home.php');
@@ -40,4 +49,5 @@ if (empty($username && $password && $nama && $email && $alamat && $tlp && $level
     </script>
 <?php
             }
+            $koneksi->close()
 ?>

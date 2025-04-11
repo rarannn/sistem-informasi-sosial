@@ -13,48 +13,70 @@ if (!isset($_SESSION['username'])) {
 $kode = $_GET['id'];
 $username = $_SESSION['username'];
 $nama = $_SESSION['nama'];
-$jenis = $_POST['jenis'];
-$deskripsi = $_POST['deskripsi'];
-$file_name = $_FILES['data']['name'];
-$direktori = "C:/xampp/htdocs/project/Sosial/upload-file/pengaduan/";
+$jenis = htmlspecialchars($_POST['jenis'] ?? '', ENT_QUOTES, 'UTF-8');
+$deskripsi = htmlspecialchars($_POST['deskripsi'] ?? '', ENT_QUOTES, 'UTF-8');
+$file_name_raw = $_FILES['data']['name'] ?? '';
+$file_name = htmlspecialchars(basename($file_name_raw), ENT_QUOTES, 'UTF-8');
+$tmp_name = htmlspecialchars($_FILES['data']['tmp_name'] ?? '', ENT_QUOTES, 'UTF-8');
+$direktori = __DIR__ . "/../upload-file/pengaduan/";
 
 
 if (isset($_POST['simpan'])) {
     if (empty($jenis && $deskripsi && $file_name) != true) {
+        if ($_FILES['data']['size'] >= 50000000) {
+            echo "<script>
+              alert('Ukuran maksimal file yang boleh dikirim adalah 50MB');
+              setTimeout(function() {
+                window.location.href = 'aturan_layanan.php';
+              }, 2000);
+            </script>";
+            exit;
+        }
         $ekstensi_boleh = array('pdf');
         $x = explode('.', $file_name);
         $ekstensi = strtolower(end($x));
         if (in_array($ekstensi, $ekstensi_boleh) === true) {
             if ($_GET['hal'] == "edit") {
-                $query = "UPDATE pengaduan SET
-             jenis = '$_POST[jenis]',
-             deskripsi = '$_POST[deskripsi]',
-             `data` = '$file_name',
-             tanggal = NOW()
-             WHERE pengaduan.id = '$kode'";
-                $edit = mysqli_query($koneksi, $query) or die("Error in query: $query");
-
-                if ($edit) {
-                    move_uploaded_file($_FILES['data']['tmp_name'], $direktori . $file_name);
-                    echo "<script>alert('Berhasil Memperbarui Pengaduan!');</script>";
-                    header("refresh:2;url=pengaduan.php");
+                $query = "UPDATE pengaduan SET jenis = ?, deskripsi = ?, `data` = ?, tanggal = NOW() WHERE id = ? AND userId = ?";
+                $sql = $koneksi->prepare($query);
+            
+                $sql->bind_param("ssssi", $jenis, $deskripsi, $file_name, $kode, $username);
+            
+                if ($sql->execute()) {
+                    move_uploaded_file($tmp_name, $direktori . $file_name);
+                    echo "<script>
+                        alert('Berhasil Mengupdate Pengaduan!');
+                        setTimeout(function() {
+                        window.location.href = '/pengguna/pengaduan.php';
+                        }, 2000);
+                    </script>";
+                    exit;
                 } else {
-                    echo "<script>alert('Edit Data Gagal!');</script>";
-                    header("refresh:2;url=pengaduan.php");
+                    echo "<script>
+                        alert('Gagal Mengupdate Data!');
+                        setTimeout(function() {
+                        window.location.href = '/pengguna/pengaduan.php';
+                        }, 2000);
+                    </script>";
+                    error_log("Database error: " . mysqli_error($koneksi));
                 }
+                $sql->close();
             } else {
 
-                $sql = "INSERT INTO pengaduan (userId, nama, jenis, deskripsi, `data`, tanggal)
-             values ('" . $username . "','" . $nama . "','" . $jenis . "','" . $deskripsi . "','" . $file_name . "',NOW())";
-                $a = $koneksi->query($sql);
-                if ($a === true) {
-                    move_uploaded_file($_FILES['data']['tmp_name'], $direktori . $file_name);
+                $query = "INSERT INTO pengaduan (userId, nama, jenis, deskripsi, `data`, tanggal) 
+                        VALUES (?, ?, ?, ?, ?, NOW())";
+                $sql = $koneksi->prepare($query);
+                $sql->bind_param("sssss", $username, $nama, $jenis, $deskripsi, $file_name);
+
+                if ($sql->execute()) {
+                    move_uploaded_file($tmp_name, $direktori . $file_name);
                     echo "<script>alert('Berhasil Mengirim Pengaduan!');</script>";
                     header("refresh:2;url=pengaduan.php");
                 } else {
                     echo "<script>alert('Gagal Mengirim Pengaduan!');</script>";
                     echo "<script>history.back();</script>";
                 }
+                $sql->close();
             }
         } else {
             echo "<script>alert('Ekstensi gambar hanya bisa pdf');</script>";
@@ -71,8 +93,11 @@ if (isset($_POST['simpan'])) {
 // tombol edit tabel
 if (isset($_GET['hal'])) {
     if ($_GET['hal'] == "edit") {
-        $b = mysqli_query($koneksi, "SELECT * FROM pengaduan where id='$_GET[id]'");
-        $data = mysqli_fetch_array($b);
+        $stmt = $koneksi->prepare("SELECT * FROM pengaduan WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $data = $result->fetch_assoc();
         if ($data) {
             $vjenis = $data['jenis'];
             $vdesk = $data['deskripsi'];
@@ -80,16 +105,22 @@ if (isset($_GET['hal'])) {
         }
     } elseif ($_GET['hal'] == "hapus") {
     // Hapus entri terkait di tabel hasil_pengaduan terlebih dahulu
-    $hapus_hasil_pengaduan = mysqli_query($koneksi, "DELETE FROM hasil_pengaduan WHERE pengaduanId='$_GET[id]'");
+    $hapus_hasil_pengaduan = $koneksi->prepare("DELETE FROM hasil_pengaduan WHERE pengaduanId=? AND nama=?");
+    $hapus_hasil_pengaduan->bind_param("ss", $_GET["id"], $username);
 
     // Periksa apakah penghapusan berhasil
-    if ($hapus_hasil_pengaduan) {
+    if ($hapus_hasil_pengaduan->execute()) {
         // Lanjutkan menghapus entri di tabel pengaduan
-        $hapus_pengaduan = mysqli_query($koneksi, "DELETE FROM pengaduan WHERE id='$_GET[id]'");
-        
-        if ($hapus_pengaduan) {
-            echo "<script>alert('Hapus Data Sukses!');</script>";
-            header("refresh:2;url=pengaduan.php");
+        $hapus_pengaduan = $koneksi->prepare("DELETE FROM pengaduan WHERE id=? AND userId=?");
+        $hapus_pengaduan->bind_param("ss",$_GET["id"], $username);
+        if ($hapus_pengaduan->execute()) {
+            if ($hapus_pengaduan->affected_rows == 0 && $hapus_hasil_pengaduan->affected_rows == 0) {
+                echo "<script>alert('Hapus Data Gagal!');</script>";
+                header("refresh:2;url=pengaduan.php");
+            } else {
+                echo "<script>alert('Hapus Data Sukses!');</script>";
+                header("refresh:2;url=pengaduan.php");
+            }
         } else {
             echo "<script>alert('Gagal menghapus data pengaduan!');</script>";
         }

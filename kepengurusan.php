@@ -10,35 +10,58 @@ if (!isset($_SESSION['username'])) {
   $level = $_SESSION['level'];
 }
 
-$id = $_POST['id'];
-$nama = $_POST['nama'];
-$nip = $_POST['nip'];
-$jabatan = $_POST['jabatan'];
-$file_name = $_FILES['foto']['name'];
+$id = htmlspecialchars($_POST['id'] ?? '', ENT_QUOTES, "UTF-8");
+$nama = htmlspecialchars($_POST['nama'] ?? '', ENT_QUOTES, "UTF-8");
+$nip = htmlspecialchars($_POST['nip'] ?? '', ENT_QUOTES, "UTF-8");
+$jabatan = htmlspecialchars($_POST['jabatan'] ?? '', ENT_QUOTES, "UTF-8");
+$file_name = htmlspecialchars($_FILES['foto']['name'] ?? '', ENT_QUOTES, "UTF-8");
 $direktori = "uploads-gambar/";
 
 
 // Proses penambahan data pengurus ke dalam database
 if (isset($_POST['simpan'])) {
   if (empty($id && $nama && $nip && $jabatan && $file_name) != true) {
-    $ekstensi_boleh = array('png', 'jpg', 'jpeg', 'webp');
-    $x = explode('.', $file_name);
-    $ekstensi = strtolower(end($x));
+
+    $allowed_extensions = ['png', 'jpg', 'jpeg', 'webp'];
+    $file_name = $_FILES['foto']['name'];
     $file_tmp = $_FILES['foto']['tmp_name'];
-    $angka_acak = rand(1, 999);
-    $nama_gambar_baru = $angka_acak . '-' . $file_name;
+    $file_size = $_FILES['foto']['size'];
 
-    if (in_array($ekstensi, $ekstensi_boleh)) {
-      move_uploaded_file($file_tmp, $direktori . $nama_gambar_baru);
+    // Mengambil ekstensi file
+    $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
 
+    // Validasi ekstensi dan mengecek apakah gambar asli
+    if (in_array($ext, $allowed_extensions) && getimagesize($file_tmp) !== false) {
+
+      // Membuat nama file baru dengan uniqid, sehingga file tidak bertabrakan
+      $new_file_name = uniqid('img_', true) . '.' . $ext;
+
+      if ($file_size > 10 * 1024 * 1024) { // Batas ukuran file adalah 10MB
+        echo "<script>
+          alert('File terlalu besar! Silahkan kirim file yang dibwah 10MB');
+          setTimeout(function() {
+            window.location.href = 'kepengurusan.php';
+          }, 2000);
+        </script>";
+        exit;
+      }
+
+      // Memindahkan file ke direktori
+      $destination = $direktori . $new_file_name;
+      move_uploaded_file($file_tmp, $destination);
       $query = "INSERT INTO kepengurusan (id, nip, foto, nama, jabatan)
-               values ('$id','$nip','$nama_gambar_baru','$nama','$jabatan')";
-      $result = mysqli_query($koneksi, $query);
+      values (?, ?, ?, ?, ?)";
+      $sql = $koneksi->prepare($query);
+      $sql->bind_param("sssss", $id, $nip, $nama_gambar_baru, $nama, $jabatan);
 
-      if ($result) {
-        echo "<script>alert('Berhasil Mengirim Aturan Layanan!'); window.location.href='kepengurusan.php';</script>";
+      if ($sql->execute()) {
+      echo "<script>alert('Berhasil Mengirim Aturan Layanan!'); window.location.href='kepengurusan.php';</script>";
       } else {
-        echo "<script>alert('Query Error: " . mysqli_error($koneksi) . "');</script>";
+        // Log error ke file.
+        error_log("Database error: " . mysqli_error($koneksi));
+
+        // Memberikan alert saja kepada user.
+        echo "<script>alert('Terjadi kesalahan saat memproses data. Silakan coba lagi.');</script>";
       }
     } else {
       echo "<script>alert('Ekstensi gambar hanya bisa jpg, jpeg, webp dan png');</script>";
@@ -52,7 +75,10 @@ if (isset($_POST['simpan'])) {
 
 if (isset($_GET['hal']) && $_SESSION['level'] == 'petugas') {
   if ($_GET['hal'] == "hapus") {
-    $hapus = mysqli_query($koneksi, "DELETE FROM kepengurusan WHERE id='$_GET[id]'");
+    $query = "DELETE FROM kepengurusan WHERE id=?";
+    $hapus = $koneksi->prepare($query);
+    $hapus->bind_param("i", $_GET['id']);
+    $hapus->execute();
     if ($hapus) {
       echo "<script>
           alert('Hapus Data Sukses!');

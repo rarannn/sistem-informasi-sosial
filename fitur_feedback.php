@@ -20,18 +20,30 @@ $result_feedback = $koneksi->query($query_feedback);
 
 // Fungsi untuk menghapus feedback
 if (isset($_GET['hapus'])) {
+  if ($_SESSION['level'] != 'petugas') {
+    echo "Anda tidak diizinkan untuk menghapus feedback!";
+    die;
+  }
   $id_feedback = $_GET['hapus'];
-  $sql_delete = "DELETE FROM feedback WHERE id='$id_feedback'";
-  $koneksi->query($sql_delete);
-  echo "<script>alert('Feedback berhasil dihapus');</script>";
-  header("refresh:0;url=fitur_feedback.php");
+  $delete_query = "DELETE FROM feedback WHERE id=?";
+  $sql = $koneksi->prepare($delete_query);
+  $sql->bind_param("i",$id_feedback);
+  if($sql->execute()) {
+    echo "<script>alert('Feedback berhasil dihapus');</script>";
+    header("refresh:0;url=fitur_feedback.php");
+  } else {
+    echo "Gagal menghapus feedback!";
+    die;
+  }
 }
 
 if (isset($_POST['simpan'])) {
   if (empty($tanggapan) != true) {
-    $sql = "INSERT INTO feedback (userId, tanggapan) VALUES ('" . $_SESSION['username'] . "','" . $tanggapan . "')";
-    $a = $koneksi->query($sql);
-    if ($a === true) {
+    $tanggapan = htmlspecialchars($tanggapan, ENT_QUOTES, 'UTF-8');
+    $query = "INSERT INTO feedback (userId, tanggapan) VALUES (?, ?)";
+    $a = $koneksi->prepare($query);
+    $a->bind_param("ss", $_SESSION['username'], $tanggapan);
+    if ($a->execute()) {
       echo "<script>alert('Berhasil Memberi Feedback!');</script>";
       header("refresh:2;url=fitur_feedback.php");
     } else {

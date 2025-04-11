@@ -9,14 +9,15 @@ if (!isset($_SESSION['username'])) {
 }
 
 $pengId = $_POST['pengId'];
-$tanggapan = $_POST['tanggapan'];
-$nama = $_POST['nama'];
+$tanggapan = htmlspecialchars($_POST['tanggapan'] ?? '', ENT_QUOTES, 'UTF-8');
+$nama = htmlspecialchars($_POST['nama'] ?? '', ENT_QUOTES, 'UTF-8');
 $petugas = $_SESSION['nama'];
-$file_name = $_FILES['file']['name'];
+$file_name = htmlspecialchars($_FILES['file']['name'] ?? '', ENT_QUOTES, 'UTF-8');
 $file_tmp = $_FILES['file']['tmp_name'];
-$direktori_pengaduan = "C:/xampp/htdocs/project/Sosial/upload-file/pengaduan/";
-$direktori_administrasi = "C:/xampp/htdocs/project/Sosial/upload-file/administrasi/";
-$jenis_layanan = $_POST['jenis'];
+$direktori_pengaduan = __DIR__ . "/../upload-file/pengaduan/";
+$direktori_administrasi = __DIR__ . "/..upload-file/administrasi/";
+$jenis_layanan = htmlspecialchars($_POST['jenis'] ?? '', ENT_QUOTES, "UTF-8");
+$allowed_ext = ['pdf', 'txt', 'docx', 'doc'];
 
 if ($jenis_layanan == 'Pengaduan') {
     $direktori = $direktori_pengaduan;
@@ -26,27 +27,38 @@ if ($jenis_layanan == 'Pengaduan') {
 $linkberkas = $direktori . $file_name;
 
 if (isset($_POST['simpan'])) {
+
+    $extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+    if (!in_array($extension, $allowed_ext)) {
+        echo "<script>alert('Hanya menerima file yang memiliki ekstensi pdf, txt ,docx, doc');</script>";
+        die;
+    }
+
     if (empty($pengId) || empty($nama) || empty($tanggapan) || empty($file_name)) {
         echo "<script>alert('Ulangi ada input yang kosong');</script>";
         echo "<script>history.back();</script>";
     } else {
         if ($jenis_layanan == 'Pengaduan') {
-            $sql_check = "SELECT * FROM pengaduan WHERE id='$pengId' AND nama='$nama'";
+            $sql_check = "SELECT * FROM pengaduan WHERE id=? AND nama=?";
         } else {
-            $sql_check = "SELECT * FROM administrasi WHERE id='$pengId' AND nama='$nama'";
+            $sql_check = "SELECT * FROM administrasi WHERE id=? AND nama=?";
         }
-        $result_check = $koneksi->query($sql_check);
+        $result_check = $koneksi->prepare($sql_check);
+        $result_check->bind_param("ss", $pengId, $nama);
+        $result_check->execute();
+        $result_check->store_result();
 
         if ($result_check->num_rows > 0) {
             if ($jenis_layanan == 'Pengaduan') {
                 $sql = "INSERT INTO hasil_pengaduan (pengaduanId, nama, deskripsi, file, tanggal, petugas) 
-                        VALUES ('$pengId', '$nama', '$tanggapan', '$file_name', NOW(), '$petugas')";
+                        VALUES (?, ?, ?, ?, NOW(), ?)";
             } else {
                 $sql = "INSERT INTO hasil_administrasi (administrasiId, nama, deskripsi, file, tanggal, petugas) 
-                        VALUES ('$pengId', '$nama', '$tanggapan', '$file_name', NOW(), '$petugas')";
+                        VALUES (?, ?, ?, ?, NOW(), ?)";
             }
-            $a = $koneksi->query($sql);
-            if ($a === true) {
+            $a = $koneksi->prepare($sql);
+            $a->bind_param("sssss", $pengId, $nama, $tanggapan, $file_name, $petugas);
+            if ($a->execute()) {
                 move_uploaded_file($file_tmp, $linkberkas);
                 echo "<script>alert('Berhasil Mengirim Hasil $jenis_layanan!');</script>";
                 header("refresh:2;url=hasil_pengaduan.php");
@@ -69,21 +81,34 @@ if (isset($_POST['simpan'])) {
 
 // tombol hapus
 if (isset($_GET['hal'])) {
-    $hapus = mysqli_query($koneksi, "DELETE FROM hasil_pengaduan WHERE id='$_GET[id]'");
-    $hapus = mysqli_query($koneksi, "DELETE FROM hasil_administrasi WHERE id='$_GET[id]'");
+    $query1 = "DELETE FROM hasil_pengaduan WHERE id=?";
+    $query2 = "DELETE FROM hasil_administrasi WHERE id=?";
+    try {
+        $sql = $koneksi->prepare($query1);
+        $sql->bind_param("i",$_GET['id']);
+        $sql->execute();
 
-    if ($hapus) {
+        $sql = $koneksi->prepare($query2);
+        $sql->bind_param("i",$_GET['id']);
+        $sql->execute();
+        // If both succeed, commit the query.
+        $koneksi->commit();
+
         echo "<script>
-        alert('Hapus Data Sukses!');
-        location='hasil_pengaduan.php';
+            alert('Hapus Data Sukses!');
+            location='hasil_pengaduan.php';
         </script>";
-    } else {
-        $error = mysqli_error($koneksi);
-        echo "<script>
-        alert('Gagal menghapus data: $error');
-        </script>";
+
+        } catch (Exception $e) {
+            // If something failed, roll back
+            $koneksi->rollback();
+            error_log("Database error: " . $e->getMessage());
+            echo "<script>
+                alert('Hapus Data Gagal:')
+                location='hasil_pengaduan.php';
+            </script>";
+        }
     }
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -93,7 +118,8 @@ if (isset($_GET['hal'])) {
     <title>Hasil Layanan</title>
     <link rel="stylesheet" href="../globals.css" />
     <link rel="stylesheet" href="../styleguide.css" />
-    <link rel="stylesheet" href="../style-hasil-pengaduan.css" </head>
+    <link rel="stylesheet" href="../style-hasil-pengaduan.css">
+</head>
 
 <body>
     <div class="hasil-pengaduan">
@@ -355,7 +381,7 @@ if (isset($_GET['hal'])) {
                             </td>
                             <td class="frame-18">
                                 <div class="text-wrapper-7">
-                                    <a href="downloadfile.php?hasil=<?= $tampil['file']; ?>"><?php echo $tampil['file']; ?></a>
+                                    <a href="downloadfile.php?type=pengaduan&file=<?= $tampil['file']; ?>"><?php echo $tampil['file']; ?></a>
                                 </div>
                             </td>
 

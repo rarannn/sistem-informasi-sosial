@@ -11,34 +11,41 @@ if (!isset($_SESSION['username'])) {
 $kode = $_GET['id'];
 $username = $_SESSION['username'];
 $nama = $_SESSION['nama'];
-$jenis = $_POST['jenis'];
-$deskripsi = $_POST['deskripsi'];
 //  $data = $_POST['data'];
-$file_name = $_FILES['data']['name'];
-$direktori = "C:/xampp/htdocs/project/Sosial/upload-file/administrasi/";
+$jenis = htmlspecialchars($_POST['jenis'] ?? '', ENT_QUOTES, 'UTF-8');
+$deskripsi = htmlspecialchars($_POST['deskripsi'] ?? '', ENT_QUOTES, 'UTF-8');
+$file_name = htmlspecialchars(basename($_FILES['data']['name'] ?? ''), ENT_QUOTES, 'UTF-8');
+$direktori = __DIR__ . "/../upload-file/administrasi/";
 
 
 if (isset($_POST['simpan'])) {
     if (empty($jenis && $deskripsi) != true) {
+        if ($_FILES['data']['size'] >= 50000000) {
+            echo "<script>
+              alert('Ukuran maksimal file yang boleh dikirim adalah 50MB');
+              setTimeout(function() {
+                window.location.href = 'aturan_layanan.php';
+              }, 2000);
+            </script>";
+            exit;
+        }
         $ekstensi_boleh = array('pdf');
         $x = explode('.', $file_name);
         $ekstensi = strtolower(end($x));
         if (in_array($ekstensi, $ekstensi_boleh) === true) {
             if ($_GET['hal'] == "edit") {
-                $query = "UPDATE administrasi SET
-            --  username = '$_POST[username]',
-            --  nama = '$_POST[nama]',
-             jenis = '$jenis',
-             deskripsi = '$deskripsi',
-             `data` = '$file_name',
-             tanggal = NOW()
-             WHERE administrasi.id = '$kode'";
-                $edit = mysqli_query($koneksi, $query) or die("Error in query: $query");
+                $sql = $koneksi->prepare("UPDATE administrasi SET userId = ?, nama = ?, jenis = ?, deskripsi = ?, `data` = ?, tanggal = NOW() WHERE id = ? AND userId = ?");
+                $sql->bind_param("sssssis", $username, $nama, $jenis, $deskripsi, $file_name, $_GET['id'], $username);
+                $edit = $sql->execute();
 
                 if ($edit) {
-                    move_uploaded_file($_FILES['data']['tmp_name'], $direktori . $file_name);
+                    if (move_uploaded_file($_FILES['data']['tmp_name'], $direktori . $file_name)){
                     echo "<script>alert('Berhasil Memperbarui administrasi!');</script>";
                     header("refresh:2;url=administrasi.php");
+                } else {
+                    echo "<script>alert('Gagal memindahkan file!');</script>";
+                    header("refresh:2;url=administrasi.php");
+                }
                 } else {
                     echo "<script>alert('Edit Data Gagal!');</script>";
                     header("refresh:2;url=administrasi.php");
@@ -46,8 +53,10 @@ if (isset($_POST['simpan'])) {
             } else {
 
                 $sql = "INSERT INTO administrasi (userId, nama, jenis, deskripsi, `data`, tanggal)
-             values ('" . $username . "','" . $nama . "','" . $jenis . "','" . $deskripsi . "','" . $file_name . "',NOW())";
-                $a = $koneksi->query($sql);
+                VALUES (?, ?, ?, ?, ?, NOW())";
+                $stmt = $koneksi->prepare($sql);
+                $stmt->bind_param("sssss", $username, $nama, $jenis, $deskripsi, $file_name);
+                $a = $stmt->execute();
                 if ($a === true) {
                     move_uploaded_file($_FILES['data']['tmp_name'], $direktori . $file_name);
                     echo "<script>alert('Berhasil Mengirim administrasi!');</script>";
@@ -72,8 +81,11 @@ if (isset($_POST['simpan'])) {
 // tombol hapus tabel
 if (isset($_GET['hal'])) {
     if ($_GET['hal'] == "edit") {
-        $b = mysqli_query($koneksi, "SELECT * FROM administrasi where id='$_GET[id]'");
-        $data = mysqli_fetch_array($b);
+        $b = $koneksi->prepare("SELECT * FROM administrasi where id=?");
+        $b->bind_param("i", $_GET['id']);
+        $b->execute();
+        $result = $b->get_result();
+        $data = $result->fetch_array(MYSQLI_ASSOC);
         if ($data) {
             $vjenis = $data['jenis'];
             $vdesk = $data['deskripsi'];
@@ -81,7 +93,9 @@ if (isset($_GET['hal'])) {
 
         }
     } elseif ($_GET['hal'] == "hapus") {
-        $hapus = mysqli_query($koneksi, "DELETE FROM administrasi WHERE id='$_GET[id]'");
+        $hapus = $koneksi->prepare("DELETE FROM administrasi WHERE id=? AND userId=?");
+        $hapus->bind_param('is', $_GET['id'], $username);
+        $hapus->execute();
         if ($hapus) {
             echo "<script>
             alert('Hapus Data Sukses!');

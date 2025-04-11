@@ -5,13 +5,24 @@ session_start();
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = $_POST['username'];
-    $psw = md5($_POST['psw']);
+    $psw = $_POST['psw'];
 
-    $sql = mysqli_query($koneksi, "SELECT * FROM user WHERE username='$username' AND `password`='$psw'");
-    $cek = mysqli_num_rows($sql);
+    $sql = $koneksi->prepare("SELECT * FROM user WHERE username=?");
+    $sql->bind_param('s', $username);
+    $sql->execute();
+    
+    $data = mysqli_fetch_assoc($sql->get_result());
+    if (password_verify($psw, $data['password']) != true) {
+        echo "<script>
+            alert('Login gagal! Username atau password salah.');
+            setTimeout(function() {
+            window.location.href = '/';
+            }, 2000);
+        </script>";
+      exit;
+    }
 
-    if ($cek > 0) {
-        $data = mysqli_fetch_assoc($sql);
+    if ($data != NULL) {
         $_SESSION['username'] = $data['username'];
         $_SESSION['nama'] = $data['nama'];
         $_SESSION['level'] = $data['level'];
@@ -37,4 +48,5 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 }
+$koneksi->close();
 ?>

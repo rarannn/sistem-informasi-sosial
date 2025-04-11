@@ -8,6 +8,16 @@ if (!isset($_SESSION['username'])) {
   exit;
 }
 
+if ($_SESSION['level'] != 'petugas') {
+  echo "<script>
+  alert('Hanya user dengan level petugas bisa mengakses halaman ini!');
+    setTimeout(function() {
+    window.location.href = '/home.php';
+    }, 2000);
+  </script>";
+  die;
+}
+
 $nama = $_SESSION['nama'];
 
 // Cek apakah halaman diakses untuk edit artikel
@@ -15,8 +25,10 @@ if (isset($_GET['hal']) && $_GET['hal'] == 'edit' && isset($_GET['id'])) {
   $id_artikel = $_GET['id'];
 
   // Ambil data artikel dari database berdasarkan ID
-  $query_artikel = "SELECT * FROM artikel WHERE id = '$id_artikel'";
-  $result_artikel = $koneksi->query($query_artikel);
+  $query_artikel = $koneksi->prepare("SELECT * FROM artikel WHERE id = ?");
+  $query_artikel->bind_param('s', $id_artikel);
+  $query_artikel->execute();
+  $result_artikel = $query_artikel->get_result();
 
   // Periksa apakah artikel ditemukan
   if ($result_artikel->num_rows > 0) {
@@ -36,61 +48,96 @@ if (isset($_GET['hal']) && $_GET['hal'] == 'edit' && isset($_GET['id'])) {
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
   if (isset($_POST['artikel_id'])) {
-    $artikel_id = $_POST['artikel_id'];
-    $kategori = $_POST['kategori'];
-    $link = $_POST['link'];
-    $judul = $_POST['judul'];
-    $deskripsi = $_POST['deskripsi'];
-    $gambar = $_FILES['gambar_edit']['name'];
+      // Secure Update Operation
+      $artikel_id = $_POST['artikel_id'];
+      $kategori = htmlspecialchars($_POST['kategori'], ENT_QUOTES, 'UTF-8');
+      $link = filter_var($_POST['link'], FILTER_SANITIZE_URL);
+      $judul = htmlspecialchars($_POST['judul'], ENT_QUOTES, 'UTF-8');
+      $deskripsi = htmlspecialchars($_POST['deskripsi'], ENT_QUOTES, 'UTF-8');
 
-    if (!empty($gambar)) {
-      $gambar_tmp = $_FILES['gambar_edit']['tmp_name'];
-      $gambar_path = "uploads-gambar/" . $gambar;
-      if (move_uploaded_file($gambar_tmp, $gambar_path)) {
-        $sql_update = "UPDATE artikel SET kategori = '$kategori', link = '$link', judul = '$judul', deskripsi = '$deskripsi', gambar = '$gambar_path' WHERE id = '$artikel_id'";
-      } else {
-        $sql_update = "UPDATE artikel SET kategori = '$kategori', link = '$link', judul = '$judul', deskripsi = '$deskripsi' WHERE id = '$artikel_id'";
+      $sql_update = "UPDATE artikel SET kategori = ?, link = ?, judul = ?, deskripsi = ? WHERE id = ?";
+      $stmt = $koneksi->prepare($sql_update);
+      $stmt->bind_param("ssssi", $kategori, $link, $judul, $deskripsi, $artikel_id);
+
+      // Handle upload file secara aman
+      if (!empty($_FILES['gambar_edit']['name'])) {
+          $gambar_tmp = $_FILES['gambar_edit']['tmp_name'];
+          $gambar_name = basename($_FILES['gambar_edit']['name']);
+          $gambar_ext = strtolower(pathinfo($gambar_name, PATHINFO_EXTENSION));
+          $allowed_ext = ['jpg', 'jpeg', 'png', 'gif'];
+
+          if (in_array($gambar_ext, $allowed_ext) && $_FILES['gambar_edit']['size'] <= 10000000) { // Limit gambar adalah 10MB
+              $new_gambar_name = uniqid() . '.' . $gambar_ext;
+              $gambar_path = "uploads-gambar/" . $new_gambar_name;
+              
+              if (move_uploaded_file($gambar_tmp, $gambar_path)) {
+                  $sql_update = "UPDATE artikel SET kategori = ?, link = ?, judul = ?, deskripsi = ?, gambar = ? WHERE id = ?";
+                  $stmt = $koneksi->prepare($sql_update);
+                  $stmt->bind_param("sssssi", $kategori, $link, $judul, $deskripsi, $gambar_path, $artikel_id);
+              }
+          } else {
+              echo "<script>alert('Invalid file type or file too large!');</script>";
+              exit;
+          }
       }
-    } else {
-      $sql_update = "UPDATE artikel SET kategori = '$kategori', link = '$link', judul = '$judul', deskripsi = '$deskripsi' WHERE id = '$artikel_id'";
-    }
 
-    if ($koneksi->query($sql_update) === TRUE) {
-      echo "<script>alert('Artikel berhasil diperbarui.');</script>";
-    } else {
-      echo "<script>alert('Error: Artikel gagal diperbarui.');</script>";
-    }
+      if ($stmt->execute()) {
+          echo "<script>alert('Artikel berhasil diperbarui.');</script>";
+      } else {
+          echo "<script>alert('Error: Artikel gagal diperbarui.');</script>";
+      }
+      $stmt->close();
+  
   } elseif (isset($_POST['hapus_artikel_id'])) {
-    $artikel_id = $_POST['hapus_artikel_id'];
-    $sql_delete = "DELETE FROM artikel WHERE id = '$artikel_id'";
+      // Operasi penghapusan yang aman
+      $artikel_id = intval($_POST['hapus_artikel_id']);
+      $sql_delete = "DELETE FROM artikel WHERE id = ?";
+      $stmt = $koneksi->prepare($sql_delete);
+      $stmt->bind_param("i", $artikel_id);
 
-    if ($koneksi->query($sql_delete) === TRUE) {
-      echo "<script>alert('Artikel berhasil dihapus.');</script>";
-    } else {
-      echo "<script>alert('Error: Artikel gagal dihapus.');</script>";
-    }
-  } elseif (isset($_POST['kategori']) && isset($_POST['link']) && isset($_POST['judul']) && isset($_POST['deskripsi']) && isset($_FILES['gambar'])) {
-    $kategori = $_POST['kategori'];
-    $link = $_POST['link'];
-    $judul = $_POST['judul'];
-    $deskripsi = $_POST['deskripsi'];
-
-    $gambar = $_FILES['gambar']['name'];
-    $gambar_tmp = $_FILES['gambar']['tmp_name'];
-    $gambar_path = "uploads-gambar/" . $gambar;
-
-    if (move_uploaded_file($gambar_tmp, $gambar_path)) {
-      // Insert data into the database
-      $userId = $_SESSION['username'];
-      $sql_insert = "INSERT INTO artikel (userId, nama, kategori, link, gambar, judul, deskripsi, tanggal) VALUES ('$userId', '$nama', '$kategori', '$link', '$gambar_path', '$judul', '$deskripsi', NOW())";
-      if ($koneksi->query($sql_insert) === TRUE) {
-        echo "<script>alert('Artikel berhasil ditambahkan.');</script>";
+      if ($stmt->execute()) {
+          echo "<script>alert('Artikel berhasil dihapus.');</script>";
       } else {
-        echo "<script>alert('Error: Artikel gagal ditambahkan.');</script>";
+          echo "<script>alert('Error: Artikel gagal dihapus.');</script>";
       }
-    } else {
-      echo "<script>alert('Sorry, there was an error uploading your file.');</script>";
-    }
+      $stmt->close();
+
+  } elseif (isset($_POST['kategori'], $_POST['link'], $_POST['judul'], $_POST['deskripsi'], $_FILES['gambar'])) {
+      // Operasi INSERT yang aman
+      session_start();
+      $userId = $_SESSION['username'];
+      $kategori = htmlspecialchars($_POST['kategori'], ENT_QUOTES, 'UTF-8');
+      $link = filter_var($_POST['link'], FILTER_SANITIZE_URL);
+      $judul = htmlspecialchars($_POST['judul'], ENT_QUOTES, 'UTF-8');
+      $deskripsi = htmlspecialchars($_POST['deskripsi'], ENT_QUOTES, 'UTF-8');
+
+      // Handle File Upload
+      $gambar_tmp = $_FILES['gambar']['tmp_name'];
+      $gambar_name = basename($_FILES['gambar']['name']);
+      $gambar_ext = strtolower(pathinfo($gambar_name, PATHINFO_EXTENSION));
+      $allowed_ext = ['jpg', 'jpeg', 'png', 'gif'];
+
+      if (in_array($gambar_ext, $allowed_ext) && $_FILES['gambar']['size'] <= 10000000) { // Limit 10MB
+          $new_gambar_name = uniqid() . '.' . $gambar_ext;
+          $gambar_path = "uploads-gambar/" . $new_gambar_name;
+
+          if (move_uploaded_file($gambar_tmp, $gambar_path)) {
+              $sql_insert = "INSERT INTO artikel (userId, kategori, link, gambar, judul, deskripsi, tanggal) VALUES (?, ?, ?, ?, ?, ?, NOW())";
+              $stmt = $koneksi->prepare($sql_insert);
+              $stmt->bind_param("ssssss", $userId, $kategori, $link, $gambar_path, $judul, $deskripsi);
+
+              if ($stmt->execute()) {
+                  echo "<script>alert('Artikel berhasil ditambahkan.');</script>";
+              } else {
+                  echo "<script>alert('Error: Artikel gagal ditambahkan.');</script>";
+              }
+              $stmt->close();
+          } else {
+              echo "<script>alert('Sorry, there was an error uploading your file.');</script>";
+          }
+      } else {
+          echo "<script>alert('Invalid file type or file too large!');</script>";
+      }
   }
 }
 

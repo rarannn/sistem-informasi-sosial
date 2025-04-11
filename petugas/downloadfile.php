@@ -1,59 +1,48 @@
-<?Php
+<?php
 session_start();
 include "../koneksi.php";
 
-if (!empty($_GET['url'])) {
-    $fileName = basename($_GET['url']);
-    $filePath = "template/".$fileName;
+$allowed_dirs = [
+    'url' => __DIR__ . '/template',
+    'pengaduan' => '../upload-file/pengaduan/',
+    'administrasi' => '../upload-file/administrasi/'
+];
 
-    if (!empty($fileName) && file_exists($filePath)) {
-        header("Cache-Control: public");
-        header("Content-Description: File Transfer");
-        header("Content-Disposition: Attachment; fileName=$fileName");
-        header("Content-Type: Application/zip");
-        header("Content-Transfer-Encoding: binary");
-
-        //read file
-        readfile($filePath);
-        exit;
-    }else {
-        echo "file not exist";
-    }
-}elseif (!empty($_GET['hasil'])) {
-    $fileName = basename($_GET['hasil']);
-    $filePath = "hasil_pengaduan/".$fileName;
-
-    if (!empty($fileName) && file_exists($filePath)) {
-        header("Cache-Control: public");
-        header("Content-Description: File Transfer");
-        header("Content-Disposition: Attachment; fileName=$fileName");
-        header("Content-Type: Application/zip");
-        header("Content-Transfer-Encoding: binary");
-
-        //read file
-        readfile($filePath);
-        exit;
-    }else {
-        echo "file not exist";
-    }
-}elseif (!empty($_GET['petugas'])) {
-    $fileName = basename($_GET['petugas']);
-    $filePath = "hasil_administrasi/".$fileName;
-
-    if (!empty($fileName) && file_exists($filePath)) {
-        header("Cache-Control: public");
-        header("Content-Description: File Transfer");
-        header("Content-Disposition: Attachment; fileName=$fileName");
-        header("Content-Type: Application/zip");
-        header("Content-Transfer-Encoding: binary");
-
-        //read file
-        readfile($filePath);
-        exit;
-    }else {
-        echo "file not exist";
-    }
+// Validasi input parameter
+$type = isset($_GET['type']) ? $_GET['type'] : null;
+if (!array_key_exists($type, $allowed_dirs)) {
+    die("Invalid download type");
 }
+
+if (empty($_GET['file'])) {
+    die("No file specified");
+}
+
+$fileName = basename(path: $_GET['file']);
+$filePath = $allowed_dirs[$type] . $fileName;
+
+if (!file_exists($filePath)) {
+    echo $filePath . "<br>";
+    die("File not found");
+}
+
+if (!is_file($filePath)) {
+    die("Invalid file");
+}
+
+$finfo = finfo_open(FILEINFO_MIME_TYPE);
+$mime = finfo_file($finfo, $filePath);
+finfo_close($finfo);
+
+// Kirim file header
+header("Cache-Control: public");
+header("Content-Description: File Transfer");
+header("Content-Disposition: attachment; filename=\"" . htmlspecialchars($fileName) . "\"");
+header("Content-Type: " . $mime);
+header("Content-Length: " . filesize($filePath));
+
+readfile($filePath);
+exit;
 
 // // Tentukan folder file yang boleh di download
 // $folder = "template/";

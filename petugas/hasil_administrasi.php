@@ -8,25 +8,37 @@ if (!isset($_SESSION['username'])) {
     $username = $_SESSION['username'];
 }
 
-// $kode = $_GET['id'];
-// $petugas = $_SESSION['nama'];
 $pengId = $_POST['pengId'];
-$tanggapan = $_POST['tanggapan'];
-$nama = $_POST['nama'];
-$petugas = $_SESSION['nama'];
-$file_name = $_FILES['file']['name'];
+$tanggapan = htmlspecialchars($_POST['tanggapan'] ?? '', ENT_QUOTES, 'UTF-8');
+$nama = htmlspecialchars($_POST['nama'] ?? '', ENT_QUOTES, 'UTF-8');
+$petugas = htmlspecialchars($_SESSION['nama'] ?? '', ENT_QUOTES, 'UTF-8');
+$file_name = htmlspecialchars($_FILES['file']['name'] ?? '', ENT_QUOTES, 'UTF-8');
 $file_tmp = $_FILES['file']['tmp_name'];
-$direktori = "C:/xampp/htdocs/project/Sosial/upload-file/administrasi/";
+$direktori = __DIR__ . "/../upload-file/administrasi/";
 $linkberkas = $direktori . $file_name;
-
+$allowed_ext = ['pdf'];
 
 if (isset($_POST['simpan'])) {
-    if (empty($pengId && $nama && $tanggapan && $file_name) != true) {
+    if (!empty($pengId) && !empty($nama) && !empty($tanggapan) && !empty($file_name)) {
+        if ($_FILES['data']['size'] >= 50000000) {
+            echo "<script>
+              alert('Ukuran maksimal file yang boleh dikirim adalah 50MB');
+              setTimeout(function() {
+                window.location.href = 'aturan_layanan.php';
+              }, 2000);
+            </script>";
+            exit;
+        }
+        $extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+        if ($extension !== 'pdf') {
+            echo "Only allow PDF file!";
+            die;
+        }
+        $query = "INSERT INTO hasil_administrasi (administrasiId, nama, deskripsi, file, tanggal, petugas) VALUES (?, ?, ?, ?, NOW(), ?)";
+        $a = $koneksi->prepare($query);
+        $a->bind_param("issss", $pengId, $nama, $tanggapan, $file_name, $petugas);
 
-        $sql = "INSERT INTO hasil_administrasi (administrasiId, nama, deskripsi, file,tanggal, petugas)
-             values ('" . $pengId . "','" . $nama . "','" . $tanggapan . "','" . $file_name . "',NOW(),'" . $petugas . "')";
-        $a = $koneksi->query($sql);
-        if ($a === true) {
+        if ($a->execute() === true) {
             move_uploaded_file($file_tmp, $linkberkas);
             echo "<script>alert('Berhasil Mengirim Hasil Administrasi!');</script>";
             header("refresh:2;url=hasil_administrasi.php");
@@ -53,8 +65,11 @@ if (isset($_POST['simpan'])) {
 // tombol edit tabel
 if (isset($_GET['hal'])) {
     if ($_GET['hal'] == "hapus") {
-        $hapus = mysqli_query($koneksi, "DELETE FROM hasil_administrasi WHERE id='$_GET[id]'");
-        if ($hapus) {
+
+        $query = "DELETE FROM hasil_administrasi WHERE id=?";
+        $sql = $koneksi->prepare($query);
+        $sql->bind_param("i",$_GET['id']);
+        if ($sql->execute()) {
             echo "<script>
             alert('Hapus Data Sukses!');
             location='hasil_administrasi.php';

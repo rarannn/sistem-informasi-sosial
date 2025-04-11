@@ -10,8 +10,11 @@ if (!isset($_SESSION['username'])) {
 // Fetch data for the specific article
 if (isset($_GET['id'])) {
   $id = $_GET['id'];
-  $query = "SELECT * FROM artikel WHERE id = $id";
-  $result = $koneksi->query($query);
+  $query = "SELECT * FROM artikel WHERE id = ?";
+  $sql = $koneksi->prepare($query);
+  $sql->bind_param("i",$id);
+  $sql->execute();
+  $result = $sql->get_result();
   $row = $result->fetch_assoc();
 } else {
   // Redirect or handle case where article id is not provided
