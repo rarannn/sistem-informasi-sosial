@@ -10,8 +10,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $sql = $koneksi->prepare("SELECT * FROM user WHERE username=?");
     $sql->bind_param('s', $username);
     $sql->execute();
-    
-    $data = mysqli_fetch_assoc($sql->get_result());
+    $result = $sql->get_result();
+    $data = $result->fetch_assoc();
     if (password_verify($psw, $data['password']) != true) {
         echo "<script>
             alert('Login gagal! Username atau password salah.');
