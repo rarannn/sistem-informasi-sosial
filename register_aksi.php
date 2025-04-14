@@ -17,37 +17,36 @@ if (!empty($username) && !empty($password) && !empty($nama) && !empty($email) &&
             alert('Invalid level! it's either petugas/warga');
         </script>");
     }
-    $sql = $koneksi->prepare("SELECT * FROM user WHERE username = ?");
-    $sql->bind_param('s',$username);
+    $sql = $koneksi->prepare("SELECT * FROM user WHERE username = ? OR email = ?");
+    $sql->bind_param('ss',$username, $email);
     $sql->execute();
-    $cek_login = mysqli_num_rows($sql->get_result());
+    $cek = mysqli_num_rows($sql->get_result());
 
-    if ($cek_login > 0) {
+    if ($cek > 0) {
         echo "<script>
-            alert('username milik orang lain. Pakai username lain!');
-            </script>"; 
-        echo "<script>history.back();</script>";
-    } else {
-        $newpsw = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $koneksi->prepare("INSERT INTO user (username, password, nama, email, alamat, tlp, level, nip) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssssss", $username, $newpsw, $nama, $email, $alamat, $tlp, $level, $nip);
+        alert('Email/Username sudah digunakan oleh user lain!');
+            setTimeout(function() {
+            window.location.href = '/home.php';
+            }, 2000);
+        </script>";
+        die;
+    }
+    $newpsw = password_hash($password, PASSWORD_DEFAULT);
+    $stmt = $koneksi->prepare("INSERT INTO user (username, password, nama, email, alamat, tlp, level, nip) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssssssss", $username, $newpsw, $nama, $email, $alamat, $tlp, $level, $nip);
 
-        if ($stmt->execute()) { ?>
-            <script>
-                alert('Anda sukses registrasi');
-                location.replace('home.php');
-            </script><?php
-                    } else {
-                        echo "<script>alert('Error memasukkan data!');</script>";
-                        echo "<script>history.back();</script>";
-                    }
+    if ($stmt->execute()) { ?>
+        <script>
+            alert('Anda sukses registrasi');
+            location.replace('home.php');
+        </script><?php
+                } else {
+                    echo "<script>alert('Error memasukkan data!');</script>";
+                    echo "<script>history.back();</script>";
                 }
-            } else { ?>
-    <script>
+            }
+        ?>
+<script>
         alert('Ulangi, Ada Input yang Kosong');
         history.back();
     </script>
-<?php
-            }
-            $koneksi->close()
-?>
