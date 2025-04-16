@@ -20,7 +20,17 @@ $direktori = "uploads-gambar/";
 
 // Proses penambahan data pengurus ke dalam database
 if (isset($_POST['simpan'])) {
-  if (empty($id && $nama && $nip && $jabatan && $file_name) != true) {
+  if ($_SESSION['level'] != 'petugas') {
+    echo "<script>
+    alert('Hanya user dengan level petugas bisa mengakses halaman ini!');
+        setTimeout(function() {
+        window.location.href = '/home.php';
+        }, 2000);
+    </script>";
+    die;
+  }
+  // die(var_dump($id, $nama, $nip, $jabatan, $file_name));
+  if (!empty($id) && !empty($nama) && !empty($nip) && !empty($jabatan) && !empty($file_name)) {
 
     $allowed_extensions = ['png', 'jpg', 'jpeg', 'webp'];
     $file_name = $_FILES['foto']['name'];
@@ -31,7 +41,7 @@ if (isset($_POST['simpan'])) {
     $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
 
     // Validasi ekstensi dan mengecek apakah gambar asli
-    if (in_array($ext, $allowed_extensions) && getimagesize($file_tmp) !== false) {
+    if (in_array($ext, $allowed_extensions)) {
 
       // Membuat nama file baru dengan uniqid, sehingga file tidak bertabrakan
       $new_file_name = uniqid('img_', true) . '.' . $ext;
@@ -52,10 +62,10 @@ if (isset($_POST['simpan'])) {
       $query = "INSERT INTO kepengurusan (id, nip, foto, nama, jabatan)
       values (?, ?, ?, ?, ?)";
       $sql = $koneksi->prepare($query);
-      $sql->bind_param("sssss", $id, $nip, $nama_gambar_baru, $nama, $jabatan);
+      $sql->bind_param("sssss", $id, $nip, $destination, $nama, $jabatan);
 
       if ($sql->execute()) {
-      echo "<script>alert('Berhasil Mengirim Aturan Layanan!'); window.location.href='kepengurusan.php';</script>";
+      echo "<script>alert('Berhasil Mengirim Data Kepengurusan!'); window.location.href='kepengurusan.php';</script>";
       } else {
         // Log error ke file.
         error_log("Database error: " . mysqli_error($koneksi));
@@ -244,7 +254,7 @@ if (isset($_GET['hal']) && $_SESSION['level'] == 'petugas') {
                   <td class="text-wrapper-2"><?= $no++ ?></td>
                   <td class="text-wrapper-2"><?= $tampil['id'] ?></td>
                   <td class="text-wrapper-2"><?= $tampil['nip'] ?></td>
-                  <td class="text-wrapper-2"><img src="uploads-gambar/<?= $tampil['foto'] ?>" width="100" height="100"></td>
+                  <td class="text-wrapper-2"><img src="<?= $tampil['foto'] ?>" width="100" height="100"></td>
                   <td class="text-wrapper-2"><?= $tampil['nama'] ?></td>
                   <td class="text-wrapper-2"><?= $tampil['jabatan'] ?></td>
                   <?php if ($_SESSION['level'] == "petugas") { ?>
@@ -273,7 +283,7 @@ if (isset($_GET['hal']) && $_SESSION['level'] == 'petugas') {
               while ($row = $result->fetch_assoc()) {
                 echo ' <div class="frame-11"> 
                 <div class="frame-10">
-                <img class="mask-group" src="uploads-gambar/' . $row['foto'] . '" />
+                <img class="mask-group" src="' . $row['foto'] . '" />
       <div class="frame-12">
         <div class="div-3">
           <div class="frame-13">

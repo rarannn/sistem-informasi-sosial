@@ -12,7 +12,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $sql->execute();
     $result = $sql->get_result();
     $data = $result->fetch_assoc();
-    if (password_verify($psw, $data['password']) != true) {
+ 
+    if (password_verify($psw, $data['password']) != true && $username != $data['username']) {
         echo "<script>
             alert('Login gagal! Username atau password salah.');
             setTimeout(function() {

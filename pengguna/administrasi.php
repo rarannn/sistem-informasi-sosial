@@ -19,7 +19,7 @@ $direktori = __DIR__ . "/../upload-file/administrasi/";
 
 
 if (isset($_POST['simpan'])) {
-    if (empty($jenis && $deskripsi) != true) {
+    if (!empty($jenis) && !empty($deskripsi)) {
         if ($_FILES['data']['size'] >= 50000000) {
             echo "<script>
               alert('Ukuran maksimal file yang boleh dikirim adalah 50MB');

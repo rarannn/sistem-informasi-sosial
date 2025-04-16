@@ -8,16 +8,6 @@ if (!isset($_SESSION['username'])) {
   $username = $_SESSION['username'];
 }
 
-if ($_SESSION['level'] != 'petugas') {
-  echo "<script>
-  alert('Hanya user dengan level petugas bisa mengakses halaman ini!');
-      setTimeout(function() {
-      window.location.href = '/home.php';
-      }, 2000);
-  </script>";
-  die;
-}
-
 $kode = $_GET['id'];
 $nama = $_SESSION['nama'];
 $jenis = htmlspecialchars($_POST['jenis'] ?? '', ENT_QUOTES, "UTF-8");

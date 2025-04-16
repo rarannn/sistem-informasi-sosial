@@ -9,7 +9,7 @@ $email = htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES, 'UTF-8');
 $alamat = htmlspecialchars($_POST['alamat'] ?? '', ENT_QUOTES, 'UTF-8');
 $tlp = $_POST['tlp'];
 $level = $_POST['level'];
-$nip = $_POST['nip'];
+$nip = htmlspecialchars($_POST['nip'] ?? '', ENT_QUOTES, 'UTF-8');
 
 if (!empty($username) && !empty($password) && !empty($nama) && !empty($email) && !empty($alamat) && !empty($tlp) && !empty($level)) {
     if ($level != 'warga' && $level != 'petugas') {
