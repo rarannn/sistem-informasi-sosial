@@ -14,11 +14,11 @@ $jenis = htmlspecialchars($_POST['jenis'] ?? '', ENT_QUOTES, "UTF-8");
 $deskripsi = htmlspecialchars($_POST['deskripsi'] ?? '', ENT_QUOTES, "UTF-8");
 $file_name = htmlspecialchars($_FILES['data']['name'] ?? '', ENT_QUOTES, "UTF-8");
 $file_tmp = $_FILES['data']['tmp_name'];
-$direktori = "petugas/template";
+$direktori = "petugas/template/";
 $linkberkas = $direktori . $file_name;
 
 if (isset($_POST['simpan'])) {
-  if (empty($jenis && $deskripsi && $file_name) != true) {
+  if (!empty($jenis) && !empty($deskripsi) && !empty($file_name)) {
     if ($_GET['hal'] == "edit") {
       
       $allowed_ext = ['pdf', 'doc', 'docx', 'jpg', 'png'];
@@ -73,7 +73,6 @@ if (isset($_POST['simpan'])) {
         exit;
       }
       $allowed_extensions = ['pdf', 'doc', 'docx', 'jpg', 'png'];
-
       $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
       if (!in_array($ext, $allowed_extensions)) {
         echo "<script>
@@ -92,11 +91,11 @@ if (isset($_POST['simpan'])) {
       $a = $sql->execute();
       if ($a === true) {
         move_uploaded_file($file_tmp, $linkberkas);
-        echo "<script>alert('Berhasil Mengedit Aturan Layanan!');</script>";
+        echo "<script>alert('Berhasil Menambah Aturan Layanan!');</script>";
         // echo "<script>location('aturan_layanan.php?status=sukses');</script>";
         header("refresh:2;url=aturan_layanan.php");
       } else {
-        echo "<script>alert('Gagal Mengedit Aturan!');</script>";
+        echo "<script>alert('Gagal Menambah Aturan!');</script>";
         // echo "<script>location('aturan_layanan.php?status=gagal');</script>";
         header("refresh:2;url=aturan_layanan.php");
       }
